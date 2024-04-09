@@ -1,130 +1,152 @@
 import argparse
 import torch
-from sklearn.model_selection import train_test_split
 from benchmarks import SplitMNIST
-from trainers import StandardClassifierTrainer
-from modules import MultiHeadMLP
+from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, VCLCoreSetTrainer, NStepKLVCLTrainer, TemporalDifferenceVCLTrainer
+from data_structures import get_random_coreset
+from modules import MultiHeadMLP, VCL, NStepKLVCL, TemporalDifferenceVCL
 import numpy as np
 import random
-import utils
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
+from plotting_utils import generate_df_results, plot_task_values, plot_values
 
 
 def main(args):
     # Your code here
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     seeds = [random.randint(0, 100) for _ in range(args.num_seeds)]
+    sns.set_style("darkgrid")
+    sns.set_context("paper")
+    sns.set(font_scale=2)
+    fig, axs = plt.subplots(2, 3, figsize=(10 * 3, 6 * 2))
+
+    # SplitMNIST Hard Configuration
+    num_tasks_mem, task_mem_size = 1, 40
+
+    multitask_plot_dfs = []
+    singletask_plot_dfs = [[], [], [], [], []]
+
+
+    ##################################### Online MLE #################################################
     seed_results = []
     seed_results_per_task = []
     for seed in seeds:
         split_mnist = SplitMNIST()
         ft_size, num_classes = split_mnist.get_dims()
 
-        # Standard Classifier
-        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', n_heads=5)
-        standard_classifier_trainer = StandardClassifierTrainer(model, args, device)
+        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', 1)
+        online_mle_trainer = OnlineMLETrainer(model, args, device)
 
-        x_test_sets = []
-        y_test_sets = []
-        test_accuracies = []
-        test_accuracies_per_task = {i: [] for i in range(split_mnist.max_iter)}
-
-        for task_id in range(split_mnist.max_iter):
-            model.set_task(task_id)
-            x_train, y_train, x_test, y_test = split_mnist.next_task()
-
-            x_test_sets.append(x_test)
-            y_test_sets.append(y_test)
-
-            x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=args.valid_ratio, random_state=seed)
-
-            train_dataloader = utils.get_dataloader(x_train, y_train, args.batch_size, shuffle=True)
-            valid_dataloader = utils.get_dataloader(x_valid, y_valid, args.batch_size, shuffle=True)
-
-            test_dataloaders = utils.get_dataloaders(x_test_sets, y_test_sets, args.batch_size, shuffle=False)
-            standard_classifier_trainer.train(args.epochs_per_task, train_dataloader, valid_dataloader)
-
-            print(f"Test Accuracy after task {task_id}:")
-            acc, acc_tasks = standard_classifier_trainer.evaluate(test_dataloaders, single_head=args.single_head)
-            test_accuracies.append(acc)
-            for idx, task_acc in enumerate(acc_tasks):
-                test_accuracies_per_task[idx].append(task_acc)
-        
+        test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(split_mnist, model, args, seed)
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    sns.set_style("darkgrid")
-    sns.set_context("paper")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', num_tasks=5)
+
+    ##################################### Batch MLE #################################################
+    seed_results = []
+    seed_results_per_task = []
     
-    fig, axs = plt.subplots(1, 6, figsize=(10 * 6, 6))
-    for i in range(5):
-        task_accuracies = []
-        for results_per_task in seed_results_per_task:
-            task_accuracies.append(results_per_task[i])
+    for seed in seeds:
+        split_mnist = SplitMNIST()
+        ft_size, num_classes = split_mnist.get_dims()
         
-        plot_task_values(axs[i], np.array(task_accuracies), i + 1, 5, 'Online MLE')
+        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', 1)
+        batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
+
+        test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(split_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', num_tasks=5)
+
+    ############################### VCL ###########################################
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        split_mnist = SplitMNIST()
+        ft_size, num_classes = split_mnist.get_dims()
+
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
+        vcl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', num_tasks=5)
     
-    plot_values(axs[5], seed_results, 'Online MLE')
+    ############################# VCL with Core Set #############################################
 
-    # Dummy plot for centralized legend
-    ax_dummy = fig.add_subplot(111, frame_on=False)
-    ax_dummy.plot([], [], label='Online MLE')
-    ax_dummy.set_xticks([])
-    ax_dummy.set_yticks([])
+    seed_results = []
+    for seed in seeds:
+        split_mnist = SplitMNIST()
+        ft_size, num_classes = split_mnist.get_dims()
 
-    handles, labels = ax_dummy.get_legend_handles_labels()
-    fig.legend(handles, labels, title='Method', bbox_to_anchor=(0.5, 1.02), loc='lower center', borderaxespad=0.)
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1)
+        vcl_trainer = VCLCoreSetTrainer(model, args, device, coreset_method=get_random_coreset, K=task_mem_size, max_tasks=num_tasks_mem)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', num_tasks=5)
+    
+    ############################# N-Step KL VCL #############################################
+
+    seed_results = []
+    for seed in seeds:
+        split_mnist = SplitMNIST()
+        ft_size, num_classes = split_mnist.get_dims()
+
+        n_step = 4
+        beta = 5e-2
+        model = NStepKLVCL(ft_size, num_classes, n_step, args.layers, 'relu', n_heads=1)
+        vcl_trainer = NStepKLVCLTrainer(model, args, device, n_step, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+        
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', num_tasks=5)
+
+    ############################# TD(lambda)-VCL #############################################
+
+    seed_results = []
+    for seed in seeds:
+        split_mnist = SplitMNIST()
+        ft_size, num_classes = split_mnist.get_dims()
+
+        n_step = 4
+        lambd = 0.9
+        beta = 5e-2
+        model = TemporalDifferenceVCL(ft_size, num_classes, n_step, lambd, args.layers, 'relu', n_heads=1)
+        tdvcl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+        
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=5)
+
+    for i in range(5):
+        plot_task_values(axs[i // 3][i % 3], singletask_plot_dfs[i], i + 1, 5, 0.4, i == 4, i % 3 != 0)
+    plot_values(axs[1][2], multitask_plot_dfs, 5, 0.4, False, skip_ylabel=True)
+    axs[1][2].set_title(f'Average')
+
+    # # Dummy plot for centralized legend
+    # ax_dummy = fig.add_subplot(111, frame_on=False)
+    # ax_dummy.plot([], [], label='Online MLE')
+    # ax_dummy.set_xticks([])
+    # ax_dummy.set_yticks([])
+
+    # handles, labels = ax_dummy.get_legend_handles_labels()
+    # fig.legend(handles, labels, title='Method', bbox_to_anchor=(0.5, 1.02), loc='lower center', borderaxespad=0.)
+    plt.suptitle('Split MNIST')
     plt.tight_layout()
     plt.savefig('split_mnist.png', bbox_inches='tight')
-
-    
-def plot_values(ax, results, method):
-    sns.set_style("darkgrid")
-    sns.set_context("paper")
-
-    df = pd.DataFrame(results)
-    df.columns = df.columns + 1
-    df_melted = df.melt(var_name='# tasks', value_name='Accuracy')
-    df_melted['Method'] = [method] * len(df_melted)
-
-    ax.set_title(f'Average')
-
-    # Use seaborn to create the plot
-    sns.pointplot(x='# tasks', y='Accuracy', data=df_melted, hue='Method', errorbar='ci', marker='o', capsize=.1, ax=ax, legend=False)
-
-    # Set the y-axis limits and ticks
-    ax.set_ylim(0.3, 1.05)
-    ax.set_yticks(np.arange(0.3, 1.01, 0.1))
-
-    # Set the x-axis ticks
-    ax.set_xticks(np.arange(0, df.shape[1], 1))
-
-def plot_task_values(ax, results, task_id, num_tasks, method):
-    df = pd.DataFrame(results)
-    df.columns = df.columns + task_id
-    for task in range(1, num_tasks):
-        if task not in df.columns:
-            df[task] = np.nan
-    df = df.reindex(sorted(df.columns), axis=1)
-    df_melted = df.melt(var_name='Tasks', value_name='Accuracy')
-    df_melted['Tasks'] = df_melted['Tasks'].astype(str)
-    df_melted['Method'] = [method] * len(df_melted)
-
-    # Use seaborn to create the plot
-    sns.pointplot(x='Tasks', y='Accuracy', data=df_melted, hue='Method', errorbar='ci', marker='o', capsize=.1, ax=ax, legend=False)
-
-    # Set the title
-    ax.set_title(f'Task {task_id}')
-
-    # Set the y-axis limits and ticks
-    ax.set_ylim(0.3, 1.05)
-    ax.set_yticks(np.arange(0.3, 1.05, 0.1))
-
-    # Set the x-axis ticks
-    ax.set_xticks([str(i) for i in np.arange(1, num_tasks + 1, 1)])
-    ax.set_xticklabels(np.arange(1, num_tasks + 1, 1))
+    plt.savefig('split_mnist.eps', bbox_inches='tight')
+    plt.savefig('split_mnist.pdf', bbox_inches='tight')
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Arguments for Permuted MNIST.')
@@ -136,15 +158,15 @@ if __name__ == "__main__":
                         help='The number of tasks.')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='The learning rate.')
-    parser.add_argument('--single_head', type=bool, default=False,
+    parser.add_argument('--single_head', type=bool, default=True,
                         help='The learning rate.')
     parser.add_argument('--valid_ratio', type=float, default=0.15,
                         help='Train/Valid data ratio.')
     parser.add_argument('--enable_early_stopping', type=bool, default=True,
                         help='Whether to enable early stopping')
-    parser.add_argument('--es_patience', type=int, default=3,
+    parser.add_argument('--es_patience', type=int, default=5,
                         help='Early Stopping patience.')
-    parser.add_argument('--num_seeds', type=int, default=2,
+    parser.add_argument('--num_seeds', type=int, default=10,
                         help='The number of experiment seeds.')
     
 

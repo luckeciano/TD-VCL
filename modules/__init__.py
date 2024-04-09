@@ -2,4 +2,8 @@ from .multi_head_mlp import MultiHeadMLP
 from .multi_head_cnn import MultiHeadMNISTCNN
 from .mean_field_gaussian import MeanFieldGaussian
 from .bayesian_linear import VCLBayesianLinear
+from .nstepkl_bayesian_linear import NStepKLVCLBayesianLinear
+from .td_bayesian_linear import TDBayesianLinear
 from .vcl import VCL
+from .vcl_nstepkl import NStepKLVCL
+from .td_vcl import TemporalDifferenceVCL

@@ -6,25 +6,25 @@ from .utils import get_activation_function
 
 class VCL(nn.Module):
 
-    def __init__(self, input_size, output_size, layers, activation_fn='relu', n_heads=10, mle_model=None):
+    def __init__(self, input_size, output_size, layers, activation_fn='relu', n_heads=10, lambd_logvar=-5.0, mle_model=None):
         super(VCL, self).__init__()
         self.layers = nn.ModuleList()
         layers = ast.literal_eval(layers)
         
         # Input layer
-        self.layers.append(VCLBayesianLinear(input_size, layers[0]))
+        self.layers.append(VCLBayesianLinear(input_size, layers[0], lambd_logvar))
         
         # Hidden layers
         for i in range(len(layers) - 1):
             self.layers.append(get_activation_function(activation_fn))
-            self.layers.append(VCLBayesianLinear(layers[i], layers[i+1]))
+            self.layers.append(VCLBayesianLinear(layers[i], layers[i+1], lambd_logvar))
         
         self.layers.append(get_activation_function(activation_fn))
         
         # Output Heads
         self.heads = nn.ModuleList()
         for i in range(n_heads):
-            self.heads.append(VCLBayesianLinear(layers[-1], output_size))
+            self.heads.append(VCLBayesianLinear(layers[-1], output_size, lambd_logvar))
 
         # If a MLE model is passed, the copy the weights
         if mle_model:

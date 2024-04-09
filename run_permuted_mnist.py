@@ -1,15 +1,14 @@
 import argparse
 import torch
-from sklearn.model_selection import train_test_split
 from benchmarks import PermutedMNIST
-from trainers import StandardClassifierTrainer, VCLTrainer
-from modules import MultiHeadMLP, VCL
-import numpy as np
-import pandas as pd
+from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, NStepKLVCLTrainer, VCLCoreSetTrainer, TemporalDifferenceVCLTrainer
+from data_structures import  get_random_coreset
+from modules import MultiHeadMLP, VCL, NStepKLVCL,TemporalDifferenceVCL
 import random
 import utils
 import matplotlib.pyplot as plt
 import seaborn as sns
+from plotting_utils import generate_df_results, plot_task_values, plot_values
 
 
 def main(args):
@@ -17,116 +16,159 @@ def main(args):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     seeds = [random.randint(0, 100) for _ in range(args.num_seeds)]
 
+    # PermutedMNIST Hard Configuration
+    num_tasks_mem = 2
+    task_mem_size = 200
+
+    multitask_plot_dfs = []
+    singletask_plot_dfs = [[], [], [], [], [], [], [], [], [], []]
+
     ############################### Online MLE ###########################################
 
-    # seed_results = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
-
-        
-    #     model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', num_classes)
-    #     standard_classifier_trainer = StandardClassifierTrainer(model, args, device)
-
-    #     test_accuracies = train_eval_loop(perm_mnist, model, standard_classifier_trainer, seed, seed_results)
-    #     seed_results.append(test_accuracies)
-
-    # results = np.array(seed_results)
-    # plot_values(results, method='Online MLE')
-
-    ############################### VCL ###########################################
     seed_results = []
+    seed_results_per_task = []
     for seed in seeds:
         perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
         ft_size, num_classes = perm_mnist.get_dims()
 
-        # map_model = get_MAP_weights(ft_size, num_classes, device, perm_mnist, seed)
         
-        perm_mnist.reset_env()
-        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1)
-        vcl_trainer = VCLTrainer(model, args, device, no_kl=False)
+        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', num_classes)
+        online_mle_trainer = OnlineMLETrainer(model, args, device)
 
-        test_accuracies = train_eval_loop(perm_mnist, model, vcl_trainer, seed, seed_results)
+        test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(perm_mnist, model, args, seed)
         seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
 
-    results = np.array(seed_results)
-    plot_values(results, method='VCL')
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', 10)
 
-    plt.tight_layout()
-    plt.savefig('./permuted_mnist.png', bbox_inches='tight')
+    # ############################### Batch MLE ###########################################
+
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
+        
+        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', num_classes)
+        batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
+
+        test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', 10)
+
+    # ############################### VCL ###########################################
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
+        
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
+        vcl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', 10)
+
+    # ############################# VCL with Core Set #############################################
+
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
+
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1)
+        vcl_trainer = VCLCoreSetTrainer(model, args, device, coreset_method=get_random_coreset, K=task_mem_size, max_tasks=num_tasks_mem)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', 10)
+
+    # ############################# N-Step KL VCL #############################################
+
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
+
+        n_step = 5
+        model = NStepKLVCL(ft_size, num_classes, n_step, args.layers, 'relu', n_heads=1)
+        vcl_trainer = NStepKLVCLTrainer(model, args, device, n_step, num_tasks_mem, task_mem_size, beta=5e-3, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', 10)
+
+    ############################# TD(lambda)-VCL #############################################
+
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
+
+        n_step = 8
+        lambd = 0.5
+        beta = 1e-3
+        model = TemporalDifferenceVCL(ft_size, num_classes, n_step, lambd, args.layers, 'relu', n_heads=1)
+        tdvcl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+        
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=10)
+
+    sns.set_style("darkgrid")
+    sns.set_context("paper")
+    sns.set(font_scale=2)
+    
+    # Use seaborn to create the plot
+    figs, axs = plt.subplots(2, 5, figsize=(10 * 5, 6 * 2))
+
+    for i in range(10):
+        plot_task_values(axs[i // 5][i % 5], singletask_plot_dfs[i], i + 1, num_tasks=10, lower_ylim=0.0, legend=(i == 9), skip_ylabel=(i%5 != 0))
+    
+    plt.suptitle('Permuted MNIST - Per Task Performance')
+    figs.tight_layout()
+    
+    figs.savefig('./permuted_mnist_tasks.png', bbox_inches='tight')
+    figs.savefig('./permuted_mnist_tasks.eps', bbox_inches='tight')
+    figs.savefig('./permuted_mnist_tasks.pdf', bbox_inches='tight')
+
+    fig = plt.figure(figsize=(10, 12))
+    ax = fig.gca()
+    plot_values(ax, multitask_plot_dfs, num_tasks=10, lower_ylim=0.3, legend=True)
+    plt.suptitle('Permuted MNIST')
+    fig.tight_layout()
+    fig.savefig('./permuted_mnist.png', bbox_inches='tight')
+    fig.savefig('./permuted_mnist.eps', bbox_inches='tight')
+    fig.savefig('./permuted_mnist.pdf', bbox_inches='tight')
 
 def get_MAP_weights(ft_size, num_classes, device, perm_mnist, seed):
     model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', n_heads=1)
-    mle_trainer = StandardClassifierTrainer(model, args, device, weight_decay=0.01)
+    mle_trainer = OnlineMLETrainer(model, args, device, weight_decay=0.00)
+    x_test_sets = []
+    y_test_sets = []
     model.new_task(0, args.single_head)
-    train_dataloader, valid_dataloader, test_dataloader = generate_dataloaders(perm_mnist, [], [], seed)
+    x_train, y_train, x_valid, y_valid, _ = utils.generate_data_splits(perm_mnist, x_test_sets, y_test_sets, seed, args.valid_ratio)
+    train_dataloader, valid_dataloader, test_dataloader = utils.generate_dataloaders(x_train, y_train, x_valid, y_valid, x_test_sets, y_test_sets, args.batch_size, seed)
+
     mle_trainer.train(args.epochs_per_task, train_dataloader, valid_dataloader)
 
     print(f"Test Accuracy after for MLE model:")
     acc, _ = mle_trainer.evaluate([test_dataloader], single_head=True)
-    return model
-
-def train_eval_loop(perm_mnist, model, trainer, seed, seed_results):
-    x_test_sets = []
-    y_test_sets = []
-    test_accuracies = []
-
-    for task_id in range(perm_mnist.max_iter):
-        model.new_task(task_id, args.single_head)
-        train_dataloader, valid_dataloader, test_dataloader = generate_dataloaders(perm_mnist, x_test_sets, y_test_sets, seed)
-        
-        trainer.train(args.epochs_per_task, train_dataloader, valid_dataloader)
-
-        print(f"Test Accuracy after task {task_id}:")
-        acc, _ = trainer.evaluate([test_dataloader], single_head=True)
-        test_accuracies.append(acc)
-    
-    return test_accuracies
-
-
-
-def generate_dataloaders(perm_mnist, x_test_sets, y_test_sets, seed):
-    x_train, y_train, x_test, y_test = perm_mnist.next_task()
-
-    x_test_sets.append(x_test)
-    y_test_sets.append(y_test)
-
-    x_train, x_valid, y_train, y_valid = train_test_split(x_train, y_train, test_size=args.valid_ratio, random_state=seed)
-
-    train_dataloader = utils.get_dataloader(x_train, y_train, args.batch_size, shuffle=True)
-    valid_dataloader = utils.get_dataloader(x_valid, y_valid, args.batch_size, shuffle=True)
-
-    test_dataloader = utils.get_dataloader(np.vstack(x_test_sets), np.vstack(y_test_sets), args.batch_size, shuffle=False, drop_last=False)
-
-    return train_dataloader, valid_dataloader, test_dataloader
-    
-
-
-def plot_values(results, method):
-    sns.set_style("darkgrid")
-    sns.set_context("paper")
-
-    df = pd.DataFrame(results)
-    df.columns = df.columns + 1
-    df_melted = df.melt(var_name='# tasks', value_name='Accuracy')
-    df_melted['Method'] = [method] * len(df_melted)
-
-    # Use seaborn to create the plot
-    plt.figure(figsize=(10, 6))
-    sns.pointplot(x='# tasks', y='Accuracy', data=df_melted, hue='Method', errorbar='ci', marker='o', capsize=.1)
-
-    # Set the title
-    plt.title('Permuted MNIST')
-
-    # Set the y-axis limits and ticks
-    plt.ylim(0.3, 1.1)
-    plt.yticks(np.arange(0.3, 1.05, 0.1))
-
-    # Set the x-axis ticks
-    plt.xticks(np.arange(0, df.shape[1], 1))
-
-    plt.legend(title='Method', bbox_to_anchor=(1.05, 1), loc='upper left')
-    
+    return model    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Arguments for Permuted MNIST.')
@@ -148,7 +190,7 @@ if __name__ == "__main__":
                         help='Whether to enable early stopping')
     parser.add_argument('--es_patience', type=int, default=5,
                         help='Early Stopping patience.')
-    parser.add_argument('--num_seeds', type=int, default=2,
+    parser.add_argument('--num_seeds', type=int, default=10,
                         help='The number of experiment seeds.')
     
     

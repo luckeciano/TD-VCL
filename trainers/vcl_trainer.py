@@ -1,4 +1,3 @@
-import torch
 from trainers import Trainer
 import torch.nn.functional as F
 
