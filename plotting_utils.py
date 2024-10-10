@@ -1,6 +1,19 @@
 import numpy as np
 import seaborn as sns
 import pandas as pd
+import pickle
+
+
+def save_results(dfs, filename='results.pkl'):
+    with open(filename, 'wb') as f:
+        pickle.dump(dfs, f)
+
+
+# Load the final two resultant objects
+def load_results(filename='results.pkl'):
+    with open(filename, 'rb') as f:
+        dfs = pickle.load(f)
+    return dfs
 
 def generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, method, num_tasks):
     results = np.array(seed_results)

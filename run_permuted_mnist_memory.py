@@ -9,6 +9,7 @@ import random
 import utils
 import matplotlib.pyplot as plt
 import seaborn as sns
+from plotting_utils import save_results
 
 
 def main(args):
@@ -38,6 +39,7 @@ def main(args):
 
     results = np.array(seed_results)
     plot_dfs.append(generate_plt_dfs(results, 'Online MLE'))
+    save_results(plot_dfs, filename="results/mnist_memory_online_mle.pkl")
 
     ############################### MLE Past Data ###########################################
     configs = [[(10, 60000), (10, 10000), (10, 1000), (10, 200), (10, 50), (10, 10)],
@@ -61,6 +63,8 @@ def main(args):
 
             results = np.array(seed_results)
             task_plot_dfs.append(generate_plt_dfs(results, f'T = {num_tasks_mem}, B = {task_mem_size}'))
+        
+        save_results(task_plot_dfs, filename=f"results/mnist_memory_batch_mle_{idx}.pkl")
         plot_values(plot_dfs + task_plot_dfs, args.num_tasks, axs[idx], idx)
 
     

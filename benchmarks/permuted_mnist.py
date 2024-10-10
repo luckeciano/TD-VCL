@@ -2,6 +2,8 @@ import numpy as np
 import gzip
 import pickle
 from copy import deepcopy
+from PIL import Image
+import cv2
 
 
 class PermutedMNIST():
@@ -48,3 +50,66 @@ class PermutedMNIST():
             self.cur_iter += 1
 
             return next_x_train, next_y_train, next_x_test, next_y_test
+
+    def generate_image(self, index, save_path):
+        """
+        Generates and saves an image from the MNIST-style dataset.
+
+        Parameters:
+        index (int): The index of the image to be saved.
+        save_path (str): The path where the image will be saved.
+        """
+        # Ensure the index is within the range of the dataset
+        if index < 0 or index >= len(self.X_train):
+            raise ValueError("Index out of range")
+
+        # Get the image data from X_train
+        image_data = self.X_train[index].reshape(28, 28)
+
+        # Convert the image data to a PIL Image object
+        image = Image.fromarray(np.uint8(image_data * 255), 'L')
+
+        # Save the image
+        image.save(save_path)
+        print(f"Image saved to {save_path}")
+
+        # np.random.seed(768)
+        # perm_inds = list(range(self.X_train.shape[1]))
+        # np.random.shuffle(perm_inds)
+        # permuted_image_data = self.X_train[index][perm_inds].reshape(28, 28)
+        # permuted_image = Image.fromarray(np.uint8(permuted_image_data * 255), 'L')
+
+        # # Save the image
+        # permuted_image.save("data/permuted_mnist_pattern_3_third.png")
+        # print(f"Image saved to {save_path}")
+
+    def generate_filtered_image(self, label, index, save_path):
+        """
+        Filters X_train by label, selects the image at the given index from the filtered data, and saves it.
+
+        Parameters:
+        label (int): The label to filter X_train by.
+        index (int): The index of the image to be saved within the filtered data.
+        save_path (str): The path where the image will be saved.
+        """
+        # Filter X_train by the given label
+        filtered_indices = np.where(self.Y_train == label)[0]
+        if index < 0 or index >= len(filtered_indices):
+            raise ValueError("Index out of range in filtered data")
+
+        # Get the image data from the filtered X_train
+        image_data = self.X_train[filtered_indices[index]].reshape(28, 28)
+
+        # Convert the image data to a PIL Image object
+        image = Image.fromarray(np.uint8(image_data * 255), 'L')
+
+        # Save the image
+        image.save(save_path)
+        print(f"Filtered image saved to {save_path}")
+
+# # Example usage
+# # Assuming you have an instance of PermutedMNIST
+# permuted_mnist = PermutedMNIST()
+# permuted_mnist.generate_image(2, 'data/mnist_image_third.png')
+# permuted_mnist.generate_filtered_image(0, 2, 'data/mnist_image_0_second.png')
+# permuted_mnist.generate_filtered_image(5, 2, 'data/mnist_image_5_second.png')

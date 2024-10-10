@@ -8,7 +8,7 @@ import random
 import utils
 import matplotlib.pyplot as plt
 import seaborn as sns
-from plotting_utils import generate_df_results, plot_task_values, plot_values
+from plotting_utils import generate_df_results, plot_task_values, plot_values, save_results
 
 
 def main(args):
@@ -39,7 +39,8 @@ def main(args):
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', 10)
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_online_mle_results.pkl")
 
     # ############################### Batch MLE ###########################################
 
@@ -56,8 +57,9 @@ def main(args):
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', 10)
-
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_batch_mle_results.pkl")
+    
     # ############################### VCL ###########################################
     seed_results = []
     seed_results_per_task = []
@@ -72,7 +74,8 @@ def main(args):
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', 10)
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_vcl_results.pkl")
 
     # ############################# VCL with Core Set #############################################
 
@@ -89,7 +92,8 @@ def main(args):
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', 10)
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_vcl_coreset_results.pkl")
 
     # ############################# N-Step KL VCL #############################################
 
@@ -107,7 +111,8 @@ def main(args):
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', 10)
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_nstepkl_results.pkl")
 
     ############################# TD(lambda)-VCL #############################################
 
@@ -127,7 +132,8 @@ def main(args):
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
         
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=10)
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_tdvcl_results.pkl")
 
     sns.set_style("darkgrid")
     sns.set_context("paper")

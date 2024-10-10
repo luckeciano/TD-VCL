@@ -8,7 +8,7 @@ import numpy as np
 import random
 import seaborn as sns
 import matplotlib.pyplot as plt
-from plotting_utils import generate_df_results, plot_task_values, plot_values
+from plotting_utils import generate_df_results, plot_task_values, plot_values, save_results
 
 
 def main(args):
@@ -42,6 +42,7 @@ def main(args):
         seed_results_per_task.append(test_accuracies_per_task)
 
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_online_mle_results.pkl")
 
     ##################################### Batch MLE #################################################
     seed_results = []
@@ -59,6 +60,7 @@ def main(args):
         seed_results_per_task.append(test_accuracies_per_task)
 
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_batch_mle_results.pkl")
 
     ############################### VCL ###########################################
     seed_results = []
@@ -75,6 +77,7 @@ def main(args):
         seed_results_per_task.append(test_accuracies_per_task)
 
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_vcl_results.pkl")
     
     ############################# VCL with Core Set #############################################
 
@@ -91,6 +94,7 @@ def main(args):
         seed_results_per_task.append(test_accuracies_per_task)
 
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_vcl_coreset_results.pkl")
     
     ############################# N-Step KL VCL #############################################
 
@@ -109,6 +113,7 @@ def main(args):
         seed_results_per_task.append(test_accuracies_per_task)
         
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_nstepkl_results.pkl")
 
     ############################# TD(lambda)-VCL #############################################
 
@@ -128,6 +133,7 @@ def main(args):
         seed_results_per_task.append(test_accuracies_per_task)
         
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_tdvcl_results.pkl")
 
     for i in range(5):
         plot_task_values(axs[i // 3][i % 3], singletask_plot_dfs[i], i + 1, 5, 0.4, i == 4, i % 3 != 0)
@@ -149,7 +155,7 @@ def main(args):
     plt.savefig('split_mnist.pdf', bbox_inches='tight')
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Arguments for Permuted MNIST.')
+    parser = argparse.ArgumentParser(description='Arguments for Split MNIST.')
     parser.add_argument('--epochs_per_task', type=int, default=100,
                         help='The number of tasks.')
     parser.add_argument('--layers', type=str, default="[256, 256]",
