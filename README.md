@@ -1,2 +1,4 @@
-# vcl-nstepkl
-Variational Continual Learning with N-Step KL Regularization
+# TD-VCL
+Temporal-Difference Variational Continual Learning
+
+Status: Active Development, expect changes
