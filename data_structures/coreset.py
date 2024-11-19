@@ -25,7 +25,7 @@ def get_random_coreset(x_train, y_train, coresets, K):
 
 def select_memory_set(x_train_sets, y_train_sets, num_tasks_mem, task_mem_size, ft_size, num_classes):
     tasks_sampled = 0
-    mem_x_train = np.array([]).reshape(0, ft_size)
+    mem_x_train = np.empty((0, *ft_size))
     mem_y_train = np.array([]).reshape(0, num_classes)
     for i in range(len(x_train_sets) - 1, -1, -1):
         mem_task_x = x_train_sets[i]

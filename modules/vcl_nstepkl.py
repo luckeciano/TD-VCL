@@ -1,6 +1,6 @@
 from torch import nn
 import ast
-from modules import NStepKLVCLBayesianLinear
+from .nstepkl_bayesian_linear import NStepKLVCLBayesianLinear
 from .utils import get_activation_function
 
 class NStepKLVCL(nn.Module):

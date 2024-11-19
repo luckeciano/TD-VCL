@@ -88,7 +88,7 @@ class NStepKLVCLTrainer(Trainer):
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = self.compute_loss(outputs, targets, t)
-                acc, _, _ = utils.compute_accuracy(outputs, targets)
+                acc, _, _ = self.compute_metrics(outputs, targets)
                 # print(f'Epoch: {epoch} Train loss: {loss.item()} Batch Accuracy: {acc} ')
                 loss.backward()
                 self.optimizer.step()
@@ -104,7 +104,7 @@ class NStepKLVCLTrainer(Trainer):
                     inputs, targets, t = inputs.to(self.device), targets.to(self.device), t.to(self.device)
                     outputs = self.model(inputs, sample=False)
                     train_loss += self.compute_loss(outputs, targets, t)
-                    _, corr, tot = utils.compute_accuracy(outputs, targets)
+                    _, corr, tot = self.compute_metrics(outputs, targets)
                     train_corrects += corr
                     train_total += tot
             
@@ -119,7 +119,7 @@ class NStepKLVCLTrainer(Trainer):
                     inputs, targets, t = inputs.to(self.device), targets.to(self.device), t.to(self.device)
                     outputs = self.model(inputs, sample=False)
                     valid_loss += self.compute_loss(outputs, targets, t)
-                    _, corr, tot = utils.compute_accuracy(outputs, targets)
+                    _, corr, tot = self.compute_metrics(outputs, targets)
                     valid_corrects += corr
                     valid_total += tot
             
@@ -147,7 +147,7 @@ class NStepKLVCLTrainer(Trainer):
                 for inputs, targets in eval_loader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs, sample=False)
-                    _, correct_batch, total_batch = utils.compute_accuracy(outputs, targets)
+                    _, correct_batch, total_batch = self.compute_metrics(outputs, targets)
                     correct_predictions += correct_batch
                     total_predictions += total_batch
                     task_correct += correct_batch
@@ -160,3 +160,21 @@ class NStepKLVCLTrainer(Trainer):
         print(f'Accuracy: {acc}')
         print(f'Accuracy for each Task: {acc_tasks}')
         return acc, acc_tasks
+    
+
+class MultiHeadNStepKLVCLTrainer(NStepKLVCLTrainer):
+    def _select_outputs(self, output, target):
+        target_values = target[:, :-1]
+        task_ids = target[:, -1].long()
+
+        selected_outputs = output[torch.arange(output.shape[0]), task_ids, :]
+        return target_values, selected_outputs
+
+    def compute_loss(self, output, target, t):
+        target_values, selected_outputs = self._select_outputs(output, target)
+        loss = super().compute_loss(selected_outputs, target_values, t)
+        return loss
+    
+    def compute_metrics(self, output, target):
+        target_values, selected_outputs = self._select_outputs(output, target)
+        return utils.compute_accuracy(selected_outputs, target_values)

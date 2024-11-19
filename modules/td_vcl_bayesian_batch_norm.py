@@ -1,10 +1,14 @@
-from .nstepkl_bayesian_linear import NStepKLVCLBayesianLinear
+import torch
+import torch.nn as nn
+from .vcl_nstepkl_bayesian_batch_norm import NStepKLVCLBayesianBatchNorm2D
+    
 
-class TDBayesianLinear(NStepKLVCLBayesianLinear):
-    def __init__(self, input_size, output_size, n, lambd, lambda_logvar=-5.0):
-        super(TDBayesianLinear, self).__init__(input_size, output_size, n, lambda_logvar)
+class TDVCLBayesianBatchNorm2D(NStepKLVCLBayesianBatchNorm2D):
+    def __init__(self, num_features, n, lambd, lambda_logvar=-5.0):
+        super(TDVCLBayesianBatchNorm2D, self).__init__(num_features, n, lambda_logvar)
+
         self.lambd = lambd
-
+        
     def posterior_kl_div(self, curr_timestep):
         k = self.n - curr_timestep if curr_timestep < self.n else 1 # Decide the oldest posterior to consider
         discount = 1.0
@@ -27,4 +31,3 @@ class TDBayesianLinear(NStepKLVCLBayesianLinear):
         norm = (self.lambd - 1.0) / (self.lambd ** steps - 1.0)
         
         return kl_div * norm
-        

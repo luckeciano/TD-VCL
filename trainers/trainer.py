@@ -16,8 +16,11 @@ class Trainer:
             self.early_stop = EarlyStopping(patience=args.es_patience)
 
     def compute_loss(self, output, target):
-        loss = nn.MSELoss()(output, target)
+        loss = nn.CrossEntropyLoss()(output, target)
         return loss
+    
+    def compute_metrics(self, output, target):
+        return utils.compute_accuracy(output, target)
     
     def train_eval_loop(self, task_generator, model, args, seed):
         x_test_sets = []
@@ -51,7 +54,7 @@ class Trainer:
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
                 loss = self.compute_loss(outputs, targets)
-                acc, _, _ = utils.compute_accuracy(outputs, targets)
+                acc, _, _  = self.compute_metrics(outputs, targets)
                 # print(f'Epoch: {epoch} Train loss: {loss.item()} Batch Accuracy: {acc} ')
                 loss.backward()
                 self.optimizer.step()
@@ -67,7 +70,7 @@ class Trainer:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs, sample=False)
                     train_loss += self.compute_loss(outputs, targets)
-                    _, corr, tot = utils.compute_accuracy(outputs, targets)
+                    _, corr, tot = self.compute_metrics(outputs, targets)
                     train_corrects += corr
                     train_total += tot
             
@@ -82,7 +85,7 @@ class Trainer:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs, sample=False)
                     valid_loss += self.compute_loss(outputs, targets)
-                    _, corr, tot = utils.compute_accuracy(outputs, targets)
+                    _, corr, tot = self.compute_metrics(outputs, targets)
                     valid_corrects += corr
                     valid_total += tot
             
@@ -110,7 +113,7 @@ class Trainer:
                 for inputs, targets in eval_loader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs, sample=False)
-                    _, correct_batch, total_batch = utils.compute_accuracy(outputs, targets)
+                    _, correct_batch, total_batch = self.compute_metrics(outputs, targets)
                     correct_predictions += correct_batch
                     total_predictions += total_batch
                     task_correct += correct_batch
