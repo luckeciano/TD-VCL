@@ -2,7 +2,7 @@ from .multi_head_mlp import MultiHeadMLP
 from .multi_head_cnn import MultiHeadMNISTCNN
 from .conv_net import ConvNet, AlexNet, AlexNetV2
 
-from .mean_field_gaussian import MeanFieldGaussian
+from .mean_field_gaussian import MeanFieldGaussian, MeanFieldGaussianWithNodeVariance
 from .vcl_bayesian_linear import VCLBayesianLinear
 from .vcl_bayesian_conv import VCLBayesianConv2D
 from .vcl_nstepkl_bayesian_conv import NStepKLVCLBayesianConv2D
@@ -17,3 +17,6 @@ from .td_bayesian_linear import TDBayesianLinear
 from .vcl import VCL
 from .vcl_nstepkl import NStepKLVCL
 from .td_vcl import TemporalDifferenceVCL
+
+from .ucl_bayesian_linear import UCLBayesianLinear
+from .ucl import UCL

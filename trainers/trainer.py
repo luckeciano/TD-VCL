@@ -22,7 +22,8 @@ class Trainer:
     def compute_metrics(self, output, target):
         return utils.compute_accuracy(output, target)
     
-    def train_eval_loop(self, task_generator, model, args, seed):
+    # TODO remve break search
+    def train_eval_loop(self, task_generator, model, args, seed, break_search=False, break_search_min=0.5):
         x_test_sets = []
         y_test_sets = []
         test_accuracies = []
@@ -37,6 +38,8 @@ class Trainer:
 
             print(f"Test Accuracy after task {task_id}:")
             acc, acc_tasks = self.evaluate(test_dataloaders, single_head=args.single_head)
+            if break_search and min(acc_tasks) < break_search_min:
+                return None, None
             test_accuracies.append(acc)
             for idx, task_acc in enumerate(acc_tasks):
                 test_accuracies_per_task[idx].append(task_acc)

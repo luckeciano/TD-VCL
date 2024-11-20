@@ -3,7 +3,7 @@ import torch
 from benchmarks import PermutedMNIST
 from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, NStepKLVCLTrainer, VCLCoreSetTrainer, TemporalDifferenceVCLTrainer
 from data_structures import  get_random_coreset
-from modules import MultiHeadMLP, VCL, NStepKLVCL,TemporalDifferenceVCL
+from modules import MultiHeadMLP, VCL, NStepKLVCL,TemporalDifferenceVCL, UCL
 import random
 import utils
 import matplotlib.pyplot as plt
@@ -134,6 +134,24 @@ def main(args):
         
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=args.num_tasks)
     save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_tdvcl_results.pkl")
+
+    ############################# UCL #############################################
+
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
+        
+        model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-8.0, ratio=0.5, alpha=1.0, beta=0.03, gamma=1.0)
+        ucl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False) # Same trainer as VCL
+
+        test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+        
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCL', num_tasks=args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_ucl_results.pkl")
 
     sns.set_style("darkgrid")
     sns.set_context("paper")
