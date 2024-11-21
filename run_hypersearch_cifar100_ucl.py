@@ -4,11 +4,7 @@ from benchmarks import SplitCIFAR100
 from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, VCLCoreSetTrainer, MultiHeadVCLCoreSetTrainer, \
     NStepKLVCLTrainer, MultiHeadNStepKLVCLTrainer, TemporalDifferenceVCLTrainer, MultiHeadTDVCLTrainer
 from data_structures import get_random_coreset
-from modules import AlexNet, AlexNetV2, ConvNet, VCLBayesianConvNet, VCLBayesianAlexNet, VCLBayesianAlexNetV2, \
-    NStepKLVCLBayesianAlexNet, NStepKLVCLBayesianAlexNetV2, MultiHeadNStepKLVCLBayesianAlexNetV2, \
-    MultiHeadVCLBayesianAlexNetV2, \
-    TDVCLBayesianAlexNet, TDVCLBayesianAlexNetV2, MultiHeadTDVCLBayesianAlexNetV2, \
-    VCL, NStepKLVCL, TemporalDifferenceVCL
+from modules import UCLBayesianAlexNet
 import numpy as np
 import random
 import seaborn as sns
@@ -24,25 +20,29 @@ def main(args):
     seeds = [random.randint(0, 100) for _ in range(args.num_seeds)]
 
 
-    ############################### VCL ###########################################
-    betas = [3e-5, 1e-5, 5e-5, 5e-6, 7e-5, 1e-6, 1e-4, 5e-4, 1e-3, 1e-2]
+    ############################### UCL ###########################################
+    alphas = [1.0, 10.0, 0.1, 0.5, 0.01, 0.001]
+    betas = [0.001, 0.005, 0.01, 0.1, 1.0]
+    gammas = [0.001, 0.005, 0.01, 0.1, 1.0]
+    kl_betas = [5e-3, 1e-4, 1e-3, 1e-2, 1e-5]
     lambds_cnn = [-10.0, -8.0, -12.0, -5.0, -16.0, -20.0]
     lambds_mlp = [-10.0, -8.0, -12.0, -5.0, -16.0, -20.0]
-    lambds_bn = [-5.0, -3.0, -8.0, -10.0, -12.0, -16.0]
-    seed_results = []
-    combinations = list(itertools.product(betas, lambds_cnn, lambds_mlp, lambds_bn)) # Shuffle the combinations to ensure random sampling random.shuffle(combinations)
     
-    for beta, lambd_cnn, lambd_mlp, lambd_bn in combinations:
-        print(f"Config: cnn: {lambd_cnn}, bn: {lambd_bn}, mlp: {lambd_mlp}, beta: {beta}")
+    combinations = list(itertools.product(alphas, betas, gammas, kl_betas, lambds_cnn, lambds_mlp)) # Shuffle the combinations to ensure random sampling random.shuffle(combinations)
+    best_results = []
+    
+    for alpha, beta, gamma, kl_beta, lambd_cnn, lambd_mlp in combinations:
+        print(f"Config: alpha: {alpha}, beta: {beta}, gamma: {gamma}, kl_beta: {kl_beta}, lambd_cnn: {lambd_cnn}, lambd_mlp: {lambd_mlp}")
+        seed_results = []
         seed_results_per_task = []
-        best_results = []
+        
         for seed in seeds:
             split_cifar_100 = SplitCIFAR100()
             ft_size, num_classes = split_cifar_100.get_dims()
 
-            model = VCLBayesianAlexNetV2(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=lambd_cnn, lambda_logvar_batchnorm=lambd_bn, lambda_logvar_mlp=lambd_mlp)
+            model = UCLBayesianAlexNet(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=lambd_cnn, lambda_logvar_mlp=lambd_mlp, alpha=alpha, beta=beta, gamma=gamma)
             
-            vcl_trainer = VCLTrainer(model, args, device, beta=beta, no_kl=False)
+            vcl_trainer = VCLTrainer(model, args, device, beta=kl_beta, no_kl=False)
 
             test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_cifar_100, model, args, seed, break_search=True, break_search_min=0.35)
             if test_accuracies is None:
@@ -51,14 +51,14 @@ def main(args):
             seed_results.append(test_accuracies)
             seed_results_per_task.append(test_accuracies_per_task)
             if test_accuracies[-1] < 0.55:
-                print("Skipping config")
-                break
+                    print("Skipping config")
+                    break
 
         if seed_results:
             last_term_results = [result[-1] for result in seed_results] 
             avg_test = np.mean(last_term_results)
 
-            config = (beta, lambd_cnn, lambd_mlp, lambd_bn)
+            config = (beta, lambd_cnn, lambd_mlp)
             best_results.append((avg_test, config))
             best_results = nlargest(10, best_results, key=lambda x: x[0])
 

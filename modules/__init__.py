@@ -19,4 +19,5 @@ from .vcl_nstepkl import NStepKLVCL
 from .td_vcl import TemporalDifferenceVCL
 
 from .ucl_bayesian_linear import UCLBayesianLinear
+from .ucl_conv_net import UCLBayesianAlexNet
 from .ucl import UCL

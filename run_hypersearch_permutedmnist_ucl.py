@@ -6,6 +6,7 @@ from modules import UCL
 import numpy as np
 import random
 from heapq import nlargest
+import itertools
 
 
 def main(args):
@@ -18,15 +19,15 @@ def main(args):
     alphas = [1.0, 10.0, 0.1, 0.5, 0.01, 0.001]
     betas = [0.001, 0.005, 0.01, 0.1, 1.0]
     gammas = [0.001, 0.005, 0.01, 0.1, 1.0]
-    random.shuffle(alphas)
-    random.shuffle(betas)
-    random.shuffle(gammas)
+    kl_betas = [5e-3, 1e-4, 1e-3, 1e-2, 1e-5]
+    lambd_logvars = [-5.0, -8.0, -10.0, -12.0]
+    
+    
+    combinations = list(itertools.product(alphas, betas, gammas, kl_betas, lambd_logvars)) # Shuffle the combinations to ensure random sampling random.shuffle(combinations)
     best_results = []
     
-    for alpha in alphas:
-        for beta in betas:
-            for gamma in gammas:
-                print(f"Config: alpha: {alpha}, beta: {beta}, gamma: {gamma}")
+    for alpha, beta, gamma, kl_beta, lambd_logvar in combinations:
+                print(f"Config: alpha: {alpha}, beta: {beta}, gamma: {gamma}, kl_beta: {kl_beta}, lambd_logvar: {lambd_logvar}")
 
                 seed_results = []
                 seed_results_per_task = []
@@ -34,8 +35,8 @@ def main(args):
                     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
                     ft_size, num_classes = perm_mnist.get_dims()
                     
-                    model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-8.0, ratio=0.5, alpha=alpha, beta=beta, gamma=gamma)
-                    ucl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False) # Same trainer as VCL
+                    model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=lambd_logvar, ratio=0.5, alpha=alpha, beta=beta, gamma=gamma)
+                    ucl_trainer = VCLTrainer(model, args, device, beta=kl_beta, no_kl=False) # Same trainer as VCL
 
                     test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(perm_mnist, model, args, seed, break_search=True, break_search_min=0.45)
                     if test_accuracies is None:

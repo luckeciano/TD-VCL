@@ -43,8 +43,17 @@ class UCLBayesianLinear(VCLBayesianLinear):
             prev_layer_prev_post_strength = torch.zeros(1, self.fan_in).to(sigma_post.device)
         else: 
             sigma_prev_layer_prev_post = torch.exp(0.5 * prev_layer_logvar_prev_post)
+
             prev_layer_std_init = self.previous_ucl_layer.std_init
             prev_layer_prev_post_strength = prev_layer_std_init / sigma_prev_layer_prev_post
+
+            # For the case when the previous layer is convolutional
+            if len(prev_layer_prev_post_strength.shape) == 4:
+                feature_size = self.fan_in // prev_layer_prev_post_strength.shape[0]
+                prev_layer_prev_post_strength = prev_layer_prev_post_strength.reshape(prev_layer_prev_post_strength.shape[0], -1).expand(prev_layer_prev_post_strength.shape[0], feature_size).reshape(1, -1)
+            elif len(prev_layer_prev_post_strength.shape) == 1:
+                feature_size = self.fan_in // prev_layer_prev_post_strength.shape[0]
+                prev_layer_prev_post_strength = prev_layer_prev_post_strength.unsqueeze(1).expand(prev_layer_prev_post_strength.shape[0], feature_size).reshape(1, -1)
         
         prev_post_strength = self.std_init / sigma_prev_post
 

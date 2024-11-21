@@ -8,7 +8,8 @@ from modules import AlexNet, AlexNetV2, ConvNet, VCLBayesianConvNet, VCLBayesian
     NStepKLVCLBayesianAlexNet, NStepKLVCLBayesianAlexNetV2, MultiHeadNStepKLVCLBayesianAlexNetV2, \
     MultiHeadVCLBayesianAlexNetV2, \
     TDVCLBayesianAlexNet, TDVCLBayesianAlexNetV2, MultiHeadTDVCLBayesianAlexNetV2, \
-    VCL, NStepKLVCL, TemporalDifferenceVCL
+    VCL, NStepKLVCL, TemporalDifferenceVCL, \
+    UCLBayesianAlexNet
 import numpy as np
 import random
 import seaborn as sns
@@ -169,25 +170,44 @@ def main(args):
 
     ############################# TD(lambda)-VCL (with Task Ids) #############################################
 
+    # seed_results = []
+    # seed_results_per_task = []
+    # use_task_ids = True
+    # for seed in seeds:
+    #     split_cifar_100 = SplitCIFAR100(task_id=use_task_ids)
+    #     ft_size, num_classes = split_cifar_100.get_dims()
+
+    #     n_step = 5
+    #     lambd = 0.5
+    #     beta = 3e-5
+    #     model = MultiHeadTDVCLBayesianAlexNetV2(ft_size, n_step, lambd, num_classes=num_classes, num_heads=10, lambda_logvar=-8.0, lambda_logvar_batchnorm=-5.0, lambda_logvar_mlp=-8.0)
+    #     tdvcl_trainer = MultiHeadTDVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+
+    #     test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(split_cifar_100, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
+        
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=10)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_cifar100_tdvcl_results.pkl")
+
+    ############################### UCL ###########################################
     seed_results = []
     seed_results_per_task = []
-    use_task_ids = True
     for seed in seeds:
-        split_cifar_100 = SplitCIFAR100(task_id=use_task_ids)
+        split_cifar_100 = SplitCIFAR100()
         ft_size, num_classes = split_cifar_100.get_dims()
 
-        n_step = 5
-        lambd = 0.5
-        beta = 3e-5
-        model = MultiHeadTDVCLBayesianAlexNetV2(ft_size, n_step, lambd, num_classes=num_classes, num_heads=10, lambda_logvar=-8.0, lambda_logvar_batchnorm=-5.0, lambda_logvar_mlp=-8.0)
-        tdvcl_trainer = MultiHeadTDVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+        model = UCLBayesianAlexNet(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=-20.0, lambda_logvar_mlp=-12.0)
+        vcl_trainer = VCLTrainer(model, args, device, beta=3e-5, no_kl=False)
 
-        test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(split_cifar_100, model, args, seed)
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_cifar_100, model, args, seed)
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
-        
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=10)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_cifar100_tdvcl_results.pkl")
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCL', num_tasks=10)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_cifar100_ucl_results.pkl")
+
+
 
     for i in range(5):
         plot_task_values(axs[i // 3][i % 3], singletask_plot_dfs[i], i + 1, 5, 0.4, i == 4, i % 3 != 0)
