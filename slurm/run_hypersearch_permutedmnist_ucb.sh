@@ -28,4 +28,4 @@ generate_seed() {
 cd ~/vcl-nstepkl
 
 
-python3 -u run_hypersearch_cifar100_vcl_v1.py
+python3 -u run_hypersearch_permutedmnist_ucb.py

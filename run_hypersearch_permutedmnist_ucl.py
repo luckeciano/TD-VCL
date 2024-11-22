@@ -23,7 +23,8 @@ def main(args):
     lambd_logvars = [-5.0, -8.0, -10.0, -12.0]
     
     
-    combinations = list(itertools.product(alphas, betas, gammas, kl_betas, lambd_logvars)) # Shuffle the combinations to ensure random sampling random.shuffle(combinations)
+    combinations = list(itertools.product(alphas, betas, gammas, kl_betas, lambd_logvars)) # Shuffle the combinations to ensure random sampling 
+    random.shuffle(combinations)
     best_results = []
     
     for alpha, beta, gamma, kl_beta, lambd_logvar in combinations:
@@ -52,7 +53,7 @@ def main(args):
                     last_term_results = [result[-1] for result in seed_results] 
                     avg_test = np.mean(last_term_results)
 
-                    config = (alpha, beta, gamma)
+                    config = (alpha, beta, gamma, kl_beta, lambd_logvar)
                     best_results.append((avg_test, config))
                     best_results = nlargest(10, best_results, key=lambda x: x[0])
 

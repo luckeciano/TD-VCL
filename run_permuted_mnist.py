@@ -1,7 +1,7 @@
 import argparse
 import torch
 from benchmarks import PermutedMNIST
-from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, NStepKLVCLTrainer, VCLCoreSetTrainer, TemporalDifferenceVCLTrainer
+from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, NStepKLVCLTrainer, VCLCoreSetTrainer, TemporalDifferenceVCLTrainer, UCBTrainer
 from data_structures import  get_random_coreset
 from modules import MultiHeadMLP, VCL, NStepKLVCL,TemporalDifferenceVCL, UCL
 import random
@@ -152,6 +152,26 @@ def main(args):
         
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCL', num_tasks=args.num_tasks)
     save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_ucl_results.pkl")
+
+    ############################### UCB ###########################################
+    seed_results = []
+    seed_results_per_task = []
+    prior_patience = args.es_patience
+    args.es_patience = 20 # UCB is more robust to overfitting
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
+        
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
+        vcl_trainer = UCBTrainer(model, args, device, beta=5e-3, alpha=10.0, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCB', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_ucb_results.pkl")
+    args.es_patience = prior_patience
 
     sns.set_style("darkgrid")
     sns.set_context("paper")

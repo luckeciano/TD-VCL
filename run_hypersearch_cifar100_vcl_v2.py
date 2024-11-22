@@ -30,7 +30,9 @@ def main(args):
     lambds_mlp = [-10.0, -8.0, -12.0, -5.0, -16.0, -20.0]
     lambds_bn = [-5.0, -3.0, -8.0, -10.0, -12.0, -16.0]
     seed_results = []
-    combinations = list(itertools.product(betas, lambds_cnn, lambds_mlp, lambds_bn)) # Shuffle the combinations to ensure random sampling random.shuffle(combinations)
+    combinations = list(itertools.product(betas, lambds_cnn, lambds_mlp, lambds_bn)) 
+    # Shuffle the combinations to ensure random sampling 
+    random.shuffle(combinations)
     
     for beta, lambd_cnn, lambd_mlp, lambd_bn in combinations:
         print(f"Config: cnn: {lambd_cnn}, bn: {lambd_bn}, mlp: {lambd_mlp}, beta: {beta}")

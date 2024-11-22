@@ -15,6 +15,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from plotting_utils import generate_df_results, plot_task_values, plot_values, save_results
 from heapq import nlargest
+import itertools
 
 
 def main(args):
@@ -27,47 +28,46 @@ def main(args):
     betas = [3e-5, 1e-5, 5e-5, 5e-6, 7e-5, 1e-6, 1e-4, 5e-4, 1e-3, 1e-2]
     lambds_cnn = [-10.0, -8.0, -12.0, -5.0, -16.0, -20.0]
     lambds_mlp = [-10.0, -8.0, -12.0, -5.0, -16.0, -20.0]
-    random.shuffle(betas)
-    random.shuffle(lambds_cnn)
-    random.shuffle(lambds_mlp)
+    combinations = list(itertools.product(betas, lambds_cnn, lambds_mlp))
+    # Shuffle the combinations to ensure random sampling 
+    random.shuffle(combinations)
+
     best_results = []
     
-    for beta in betas:
-        for lambd_cnn in lambds_cnn:
-            for lambd_mlp in lambds_mlp:
-                print(f"Config: cnn: {lambd_cnn}, mlp: {lambd_mlp}, beta: {beta}")
-                seed_results = []
-                seed_results_per_task = []
-                
-                for seed in seeds:
-                    split_cifar_100 = SplitCIFAR100()
-                    ft_size, num_classes = split_cifar_100.get_dims()
+    for beta, lambd_cnn, lambd_mlp in combinations:
+        print(f"Config: cnn: {lambd_cnn}, mlp: {lambd_mlp}, beta: {beta}")
+        seed_results = []
+        seed_results_per_task = []
+        
+        for seed in seeds:
+            split_cifar_100 = SplitCIFAR100()
+            ft_size, num_classes = split_cifar_100.get_dims()
 
-                    model = VCLBayesianAlexNet(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=lambd_cnn, lambda_logvar_mlp=lambd_mlp)
-                    
-                    vcl_trainer = VCLTrainer(model, args, device, beta=beta, no_kl=False)
+            model = VCLBayesianAlexNet(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=lambd_cnn, lambda_logvar_mlp=lambd_mlp)
+            
+            vcl_trainer = VCLTrainer(model, args, device, beta=beta, no_kl=False)
 
-                    test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_cifar_100, model, args, seed, break_search=True, break_search_min=0.35)
-                    if test_accuracies is None:
-                        print("Skipping config")
-                        break
-                    seed_results.append(test_accuracies)
-                    seed_results_per_task.append(test_accuracies_per_task)
-                    if test_accuracies[-1] < 0.55:
-                            print("Skipping config")
-                            break
+            test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_cifar_100, model, args, seed, break_search=True, break_search_min=0.35)
+            if test_accuracies is None:
+                print("Skipping config")
+                break
+            seed_results.append(test_accuracies)
+            seed_results_per_task.append(test_accuracies_per_task)
+            if test_accuracies[-1] < 0.55:
+                    print("Skipping config")
+                    break
 
-                if seed_results:
-                    last_term_results = [result[-1] for result in seed_results] 
-                    avg_test = np.mean(last_term_results)
+        if seed_results:
+            last_term_results = [result[-1] for result in seed_results] 
+            avg_test = np.mean(last_term_results)
 
-                    config = (beta, lambd_cnn, lambd_mlp)
-                    best_results.append((avg_test, config))
-                    best_results = nlargest(10, best_results, key=lambda x: x[0])
+            config = (beta, lambd_cnn, lambd_mlp)
+            best_results.append((avg_test, config))
+            best_results = nlargest(10, best_results, key=lambda x: x[0])
 
-                    print("Top 10 Configurations:")
-                    for rank, (avg, params) in enumerate(best_results, 1):
-                        print(f"Rank {rank}: Avg: {avg}, Params: {params}")
+            print("Top 10 Configurations:")
+            for rank, (avg, params) in enumerate(best_results, 1):
+                print(f"Rank {rank}: Avg: {avg}, Params: {params}")
 
     
     
