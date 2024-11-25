@@ -1,6 +1,6 @@
 import argparse
 import torch
-from benchmarks import PermutedMNIST
+from benchmarks import SplitNotMNIST
 from trainers import VCLTrainer
 from modules import UCL
 import numpy as np
@@ -33,19 +33,19 @@ def main(args):
                 seed_results = []
                 seed_results_per_task = []
                 for seed in seeds:
-                    perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-                    ft_size, num_classes = perm_mnist.get_dims()
+                    split_notmnist = SplitNotMNIST()
+                    ft_size, num_classes = split_notmnist.get_dims()
                     
                     model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=lambd_logvar, ratio=0.5, alpha=alpha, beta=beta, gamma=gamma)
                     ucl_trainer = VCLTrainer(model, args, device, beta=kl_beta, no_kl=False) # Same trainer as VCL
 
-                    test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(perm_mnist, model, args, seed, break_search=True, break_search_min=0.45)
+                    test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(split_notmnist, model, args, seed, break_search=False)
                     if test_accuracies is None:
                         print("Skipping config")
                         break
                     seed_results.append(test_accuracies)
                     seed_results_per_task.append(test_accuracies_per_task)
-                    if test_accuracies[-1] < 0.55:
+                    if test_accuracies[-1] < 0.50:
                             print("Skipping config")
                             break
 
@@ -66,20 +66,18 @@ def main(args):
     
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Arguments for Permuted MNIST.')
-    parser.add_argument('--num_tasks', type=int, default=10,
-                        help='The number of tasks.')
+    parser = argparse.ArgumentParser(description='Arguments for Split MNIST.')
     parser.add_argument('--epochs_per_task', type=int, default=100,
-                        help='The number of tasks.')
-    parser.add_argument('--layers', type=str, default="[100, 100]",
+                        help='The number of epochs.')
+    parser.add_argument('--layers', type=str, default="[256, 256]",
                         help='The hidden layers.')
     parser.add_argument('--batch_size', type=int, default=256,
-                        help='The number of tasks.')
+                        help='The batch size.')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='The learning rate.')
     parser.add_argument('--single_head', type=bool, default=True,
-                        help='The learning rate.')
-    parser.add_argument('--valid_ratio', type=float, default=0.01,
+                        help='Whether use single or multiple heads.')
+    parser.add_argument('--valid_ratio', type=float, default=0.15,
                         help='Train/Valid data ratio.')
     parser.add_argument('--enable_early_stopping', type=bool, default=True,
                         help='Whether to enable early stopping')

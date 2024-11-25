@@ -1,12 +1,12 @@
 import argparse
 import torch
-from benchmarks import SplitCIFAR100
+from benchmarks import TinyImagenet
 from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, VCLCoreSetTrainer, MultiHeadVCLCoreSetTrainer, \
     NStepKLVCLTrainer, MultiHeadNStepKLVCLTrainer, TemporalDifferenceVCLTrainer, MultiHeadTDVCLTrainer, UCBTrainer
 from data_structures import get_random_coreset
-from modules import AlexNet, AlexNetV2, ConvNet, VCLBayesianConvNet, VCLBayesianAlexNet, VCLBayesianAlexNetV2, \
+from modules import AlexNet, AlexNetV2, ConvNet, VCLBayesianConvNet, VCLBayesianAlexNet, VCLBayesianAlexNetV2, VCLBayesianAlexNet64, \
     NStepKLVCLBayesianAlexNet, NStepKLVCLBayesianAlexNetV2, MultiHeadNStepKLVCLBayesianAlexNetV2, \
-    MultiHeadVCLBayesianAlexNetV2, \
+    MultiHeadVCLBayesianAlexNetV2 , MultiHeadVCLBayesianAlexNet64, \
     TDVCLBayesianAlexNet, TDVCLBayesianAlexNetV2, MultiHeadTDVCLBayesianAlexNetV2, \
     VCL, NStepKLVCL, TemporalDifferenceVCL, \
     UCLBayesianAlexNet
@@ -37,28 +37,28 @@ def main(args):
     # seed_results = []
     # seed_results_per_task = []
     # for seed in seeds:
-    #     split_cifar_100 = SplitCIFAR100()
-    #     ft_size, num_classes = split_cifar_100.get_dims()
+    #     tiny_imagenet = TinyImagenet()
+    #     ft_size, num_classes = tiny_imagenet.get_dims()
 
     #     model = AlexNetV2(ft_size, num_heads=10, num_classes=num_classes)
     #     online_mle_trainer = OnlineMLETrainer(model, args, device)
 
-    #     test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(split_cifar_100, model, args, seed)
+    #     test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(tiny_imagenet, model, args, seed)
     #     seed_results.append(test_accuracies)
     #     seed_results_per_task.append(test_accuracies_per_task)
 
     # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', num_tasks=10)
-    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_cifar100_online_mle_results.pkl")
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/tiny_imagenet_online_mle_results.pkl")
 
-    # ##################################### Batch MLE #################################################
+    # # ##################################### Batch MLE #################################################
     # seed_results = []
     # seed_results_per_task = []
     
     # for seed in seeds:
-    #     split_cifar_100 = SplitCIFAR100()
+    #     split_cifar_100 = TinyImagenet()
     #     ft_size, num_classes = split_cifar_100.get_dims()
 
-    #     model = ConvNet(ft_size, num_heads=10, num_classes=num_classes)
+    #     model = AlexNetV2(ft_size, num_heads=10, num_classes=num_classes)
     #     batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
 
     #     test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(split_cifar_100, model, args, seed)
@@ -66,24 +66,24 @@ def main(args):
     #     seed_results_per_task.append(test_accuracies_per_task)
 
     # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', num_tasks=10)
-    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_cifar100_batch_mle_results.pkl")
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/tiny_imagenet_batch_mle_results.pkl")
 
     ############################### VCL ###########################################
     # seed_results = []
     # seed_results_per_task = []
     # for seed in seeds:
-    #     split_cifar_100 = SplitCIFAR100()
-    #     ft_size, num_classes = split_cifar_100.get_dims()
+    #     tiny_imagenet = TinyImagenet()
+    #     ft_size, num_classes = tiny_imagenet.get_dims()
 
-    #     model = VCLBayesianAlexNetV2(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=-8.0, lambda_logvar_batchnorm=-5.0, lambda_logvar_mlp=-8.0)
-    #     vcl_trainer = VCLTrainer(model, args, device, beta=3e-5, no_kl=False)
+    #     model = VCLBayesianAlexNet64(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=-12.0, lambda_logvar_mlp=-8.0)
+    #     vcl_trainer = VCLTrainer(model, args, device, beta=5e-6, no_kl=False)
 
-    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_cifar_100, model, args, seed)
+    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(tiny_imagenet, model, args, seed)
     #     seed_results.append(test_accuracies)
     #     seed_results_per_task.append(test_accuracies_per_task)
 
     # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', num_tasks=10)
-    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_cifar100_vcl_results.pkl")
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/tiny_imagenet_vcl_results.pkl")
     
     ############################# VCL with Core Set #####################################
     # # Uses Task id!
@@ -211,18 +211,18 @@ def main(args):
     seed_results = []
     seed_results_per_task = []
     for seed in seeds:
-        split_cifar_100 = SplitCIFAR100()
-        ft_size, num_classes = split_cifar_100.get_dims()
+        tiny_imagenet = TinyImagenet()
+        ft_size, num_classes = tiny_imagenet.get_dims()
 
-        model = VCLBayesianAlexNet(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=-12.0, lambda_logvar_mlp=-8.0)
+        model = VCLBayesianAlexNet(ft_size, num_heads=10, num_classes=num_classes, lambda_logvar=-10.0, lambda_logvar_mlp=-5.0)
         vcl_trainer = UCBTrainer(model, args, device, beta=5e-5, alpha=10.0, no_kl=False)
 
-        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_cifar_100, model, args, seed)
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(tiny_imagenet, model, args, seed)
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
     multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCB', num_tasks=10)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_cifar100_ucb_results.pkl")
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/tiny_imagenet_ucb_results.pkl")
 
 
     for i in range(5):
@@ -247,19 +247,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Arguments for Permuted MNIST.')
     parser.add_argument('--epochs_per_task', type=int, default=100,
                         help='The number of epochs.')
-    parser.add_argument('--layers', type=str, default="[256, 256]",
-                        help='The hidden layers.')
     parser.add_argument('--batch_size', type=int, default=256,
                         help='The batch size.')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='The learning rate.')
     parser.add_argument('--single_head', type=bool, default=False,
                         help='Whether use single or multiple heads.')
-    parser.add_argument('--valid_ratio', type=float, default=0.15,
+    parser.add_argument('--valid_ratio', type=float, default=0.05,
                         help='Train/Valid data ratio.')
     parser.add_argument('--enable_early_stopping', type=bool, default=True,
                         help='Whether to enable early stopping')
-    parser.add_argument('--es_patience', type=int, default=10,
+    parser.add_argument('--es_patience', type=int, default=5,
                         help='Early Stopping patience.')
     parser.add_argument('--num_seeds', type=int, default=1,
                         help='The number of experiment seeds.')

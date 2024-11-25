@@ -216,3 +216,62 @@ class AlexNetV2(nn.Module):
         x = self.last[self.current_task](x)
         
         return x
+    
+
+class AlexNet64(nn.Module):
+    def __init__(self, inputsize, num_classes=20):
+        super(AlexNet64, self).__init__()
+
+        ncha, size, _ = inputsize
+        
+        # Convolutional layers
+        self.conv1 = nn.Conv2d(ncha, 64, kernel_size=5, stride=1, padding=2)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        
+        self.conv2 = nn.Conv2d(64, 192, kernel_size=5, stride=1, padding=2)
+        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        
+        self.conv3 = nn.Conv2d(192, 384, kernel_size=3, stride=1, padding=1)
+        
+        self.conv4 = nn.Conv2d(384, 256, kernel_size=3, stride=1, padding=1)
+        
+        self.conv5 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+        
+        # Calculate the output size after conv and pool layers
+        s = size // 8  # Size is reduced by half at each of the three pooling layers
+        
+        # Fully connected layers
+        self.fc1 = nn.Linear(256 * s * s, 1024)
+        self.drop1 = nn.Dropout(0.5)
+        self.fc2 = nn.Linear(1024, 1024)
+        self.drop2 = nn.Dropout(0.5)
+        
+        self.last = nn.Linear(1024, num_classes)
+
+    def forward(self, x):
+        # Apply the convolutional layers with ReLU activation
+        x = torch.relu(self.conv1(x))
+        x = self.pool1(x)
+        
+        x = torch.relu(self.conv2(x))
+        x = self.pool2(x)
+        
+        x = torch.relu(self.conv3(x))
+        
+        x = torch.relu(self.conv4(x))
+        
+        x = torch.relu(self.conv5(x))
+        x = self.pool3(x)
+        
+        # Flatten the output of the convolutional layers for fully connected layers
+        x = x.view(x.size(0), -1)
+        
+        # Apply fully connected layers with dropout
+        x = self.drop1(torch.relu(self.fc1(x)))
+        x = self.drop2(torch.relu(self.fc2(x)))
+        
+        # Output layer
+        x = self.last(x)
+        
+        return x
