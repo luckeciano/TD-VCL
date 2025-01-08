@@ -13,11 +13,10 @@ class UCLBayesianAlexNet(nn.Module):
         self.conv1 = UCLBayesianConv2D(ncha, 64, kernel_size=3, stride=1, padding=1, lambda_logvar=lambda_logvar, ratio=ratio, alpha=alpha, beta=beta, gamma=gamma, previous_ucl_layer=None)
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         
-        self.conv2 = UCLBayesianConv2D(64, 192, kernel_size=3, padding=1, )
+        self.conv2 = UCLBayesianConv2D(64, 192, kernel_size=3, padding=1, lambda_logvar=lambda_logvar, ratio=ratio, alpha=alpha, beta=beta, gamma=gamma, previous_ucl_layer=self.conv1)
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
         
         self.conv3 = UCLBayesianConv2D(192, 384, kernel_size=3, padding=1, lambda_logvar=lambda_logvar, ratio=ratio, alpha=alpha, beta=beta, gamma=gamma, previous_ucl_layer=self.conv2)
-        lambda_logvar=lambda_logvar, ratio=ratio, alpha=alpha, beta=beta, gamma=gamma, previous_ucl_layer=self.conv1
         self.conv4 = UCLBayesianConv2D(384, 256, kernel_size=3, padding=1, lambda_logvar=lambda_logvar, ratio=ratio, alpha=alpha, beta=beta, gamma=gamma, previous_ucl_layer=self.conv3)
         
         self.conv5 = UCLBayesianConv2D(256, 256, kernel_size=3, padding=1, lambda_logvar=lambda_logvar, ratio=ratio, alpha=alpha, beta=beta, gamma=gamma, previous_ucl_layer=self.conv4)
@@ -54,7 +53,7 @@ class UCLBayesianAlexNet(nn.Module):
         for layer in self.bayesian_layers:
                 layer.update_posterior()
         
-    def forward(self, x, sample=True):
+    def _backbone(self, x, sample):
         x = self.relu(self.conv1(x, sample))
         x = self.pool1(x)
         
@@ -72,7 +71,10 @@ class UCLBayesianAlexNet(nn.Module):
         
         x = self.drop1(self.relu(self.fc1(x, sample)))
         x = self.drop2(self.relu(self.fc2(x, sample)))
+        return x
 
+    def forward(self, x, sample=True):
+        x = self._backbone(x, sample)
         x = self.last[self.current_task](x)
         
         return x
@@ -155,3 +157,12 @@ class UCLBayesianAlexNet64(nn.Module):
         x = self.last[self.current_task](x)
         
         return x
+
+class MultiHeadUCLBayesianAlexNet(UCLBayesianAlexNet):
+    def __init__(self, inputsize, num_heads=1, num_classes=10, lambda_logvar=-15.0, lambda_logvar_mlp=-15.0, ratio=0.5, alpha=1.0, beta=0.03, gamma=1.0):
+        super(MultiHeadUCLBayesianAlexNet, self).__init__(self, inputsize, num_heads, num_classes, lambda_logvar, lambda_logvar_mlp, ratio, alpha, beta, gamma)
+    
+    def forward(self, x, sample=True):
+        x = self._backbone(x, sample)
+        outputs = torch.cat([head(x).unsqueeze(1) for head in self.last], axis=1)
+        return outputs

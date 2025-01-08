@@ -1,9 +1,9 @@
 import argparse
 import torch
 from benchmarks import SplitMNIST
-from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, VCLCoreSetTrainer, NStepKLVCLTrainer, TemporalDifferenceVCLTrainer, UCBTrainer
+from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, VCLCoreSetTrainer, NStepKLVCLTrainer, TemporalDifferenceVCLTrainer, UCBTrainer, TemporalDifferenceUCBTrainer
 from data_structures import get_random_coreset
-from modules import MultiHeadMLP, VCL, NStepKLVCL, TemporalDifferenceVCL, UCL
+from modules import MultiHeadMLP, VCL, NStepKLVCL, TemporalDifferenceVCL, UCL,TemporalDifferenceUCL
 import numpy as np
 import random
 import seaborn as sns
@@ -27,132 +27,152 @@ def main(args):
     singletask_plot_dfs = [[], [], [], [], []]
 
 
-    ##################################### Online MLE #################################################
-    seed_results = []
-    seed_results_per_task = []
-    for seed in seeds:
-        split_mnist = SplitMNIST()
-        ft_size, num_classes = split_mnist.get_dims()
+    # ##################################### Online MLE #################################################
+    # seed_results = []
+    # seed_results_per_task = []
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
 
-        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', 1)
-        online_mle_trainer = OnlineMLETrainer(model, args, device)
+    #     model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', 1)
+    #     online_mle_trainer = OnlineMLETrainer(model, args, device)
 
-        test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(split_mnist, model, args, seed)
-        seed_results.append(test_accuracies)
-        seed_results_per_task.append(test_accuracies_per_task)
+    #     test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', num_tasks=5)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_online_mle_results.pkl")
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_online_mle_results.pkl")
 
-    ##################################### Batch MLE #################################################
-    seed_results = []
-    seed_results_per_task = []
+    # ##################################### Batch MLE #################################################
+    # seed_results = []
+    # seed_results_per_task = []
     
-    for seed in seeds:
-        split_mnist = SplitMNIST()
-        ft_size, num_classes = split_mnist.get_dims()
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
         
-        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', 1)
-        batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
+    #     model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', 1)
+    #     batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
 
-        test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(split_mnist, model, args, seed)
-        seed_results.append(test_accuracies)
-        seed_results_per_task.append(test_accuracies_per_task)
+    #     test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', num_tasks=5)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_batch_mle_results.pkl")
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_batch_mle_results.pkl")
 
-    ############################### VCL ###########################################
-    seed_results = []
-    seed_results_per_task = []
-    for seed in seeds:
-        split_mnist = SplitMNIST()
-        ft_size, num_classes = split_mnist.get_dims()
+    # ############################### VCL ###########################################
+    # seed_results = []
+    # seed_results_per_task = []
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
 
-        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
-        vcl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False)
+    #     model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
+    #     vcl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False)
 
-        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
-        seed_results.append(test_accuracies)
-        seed_results_per_task.append(test_accuracies_per_task)
+    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', num_tasks=5)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_vcl_results.pkl")
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_vcl_results.pkl")
     
-    ############################# VCL with Core Set #############################################
+    # ############################# VCL with Core Set #############################################
 
-    seed_results = []
-    for seed in seeds:
-        split_mnist = SplitMNIST()
-        ft_size, num_classes = split_mnist.get_dims()
+    # seed_results = []
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
 
-        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1)
-        vcl_trainer = VCLCoreSetTrainer(model, args, device, coreset_method=get_random_coreset, K=task_mem_size, max_tasks=num_tasks_mem)
+    #     model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1)
+    #     vcl_trainer = VCLCoreSetTrainer(model, args, device, coreset_method=get_random_coreset, K=task_mem_size, max_tasks=num_tasks_mem)
 
-        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
-        seed_results.append(test_accuracies)
-        seed_results_per_task.append(test_accuracies_per_task)
+    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', num_tasks=5)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_vcl_coreset_results.pkl")
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_vcl_coreset_results.pkl")
     
-    ############################# N-Step KL VCL #############################################
+    # ############################# N-Step KL VCL #############################################
 
-    seed_results = []
-    for seed in seeds:
-        split_mnist = SplitMNIST()
-        ft_size, num_classes = split_mnist.get_dims()
+    # seed_results = []
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
 
-        n_step = 4
-        beta = 5e-2
-        model = NStepKLVCL(ft_size, num_classes, n_step, args.layers, 'relu', n_heads=1)
-        vcl_trainer = NStepKLVCLTrainer(model, args, device, n_step, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+    #     n_step = 4
+    #     beta = 5e-2
+    #     model = NStepKLVCL(ft_size, num_classes, n_step, args.layers, 'relu', n_heads=1)
+    #     vcl_trainer = NStepKLVCLTrainer(model, args, device, n_step, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
 
-        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
-        seed_results.append(test_accuracies)
-        seed_results_per_task.append(test_accuracies_per_task)
+    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
         
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', num_tasks=5)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_nstepkl_results.pkl")
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_nstepkl_results.pkl")
 
-    ############################# TD(lambda)-VCL #############################################
+    # ############################# TD(lambda)-VCL #############################################
 
-    seed_results = []
-    for seed in seeds:
-        split_mnist = SplitMNIST()
-        ft_size, num_classes = split_mnist.get_dims()
+    # seed_results = []
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
 
-        n_step = 4
-        lambd = 0.9
-        beta = 5e-2
-        model = TemporalDifferenceVCL(ft_size, num_classes, n_step, lambd, args.layers, 'relu', n_heads=1)
-        tdvcl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+    #     n_step = 4
+    #     lambd = 0.9
+    #     beta = 5e-2
+    #     model = TemporalDifferenceVCL(ft_size, num_classes, n_step, lambd, args.layers, 'relu', n_heads=1)
+    #     tdvcl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
 
-        test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(split_mnist, model, args, seed)
-        seed_results.append(test_accuracies)
-        seed_results_per_task.append(test_accuracies_per_task)
+    #     test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
         
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=5)
-    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_tdvcl_results.pkl")
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_tdvcl_results.pkl")
 
 
     ############################# UCL #############################################
 
-    seed_results = []
-    seed_results_per_task = []
-    for seed in seeds:
-        split_mnist = SplitMNIST()
-        ft_size, num_classes = split_mnist.get_dims()
+    # seed_results = []
+    # seed_results_per_task = []
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
         
-        model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-8.0, ratio=0.5, alpha=1.0, beta=0.03, gamma=1.0)
-        ucl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False) # Same trainer as VCL
+    #     model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-12.0, ratio=0.5, alpha=10.0, beta=1.0, gamma=1.0)
+    #     ucl_trainer = VCLTrainer(model, args, device, beta=0.001, no_kl=False) # Same trainer as VCL
 
-        test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(split_mnist, model, args, seed)
-        seed_results.append(test_accuracies)
-        seed_results_per_task.append(test_accuracies_per_task)
+    #     test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
         
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCL', num_tasks=args.num_tasks)
-    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/split_mnist_ucl_results.pkl")
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCL', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_ucl_results.pkl")
+
+    # ############################# TD-UCL #############################################
+
+    # seed_results = []
+    # seed_results_per_task = []
+    # n_step = 2
+    # lambd = 0.99
+    # for seed in seeds:
+    #     split_mnist = SplitMNIST()
+    #     ft_size, num_classes = split_mnist.get_dims()
+        
+    #     model = TemporalDifferenceUCL(ft_size, num_classes, n_step, lambd, args.layers, lambda_logvar=-12.0, ratio=0.5, alpha=10.0, beta=1.0, gamma=1.0, activation_fn='relu', n_heads=1)
+    #     ucl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=0.01, no_kl=False)
+
+    #     test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(split_mnist, model, args, seed)
+    #     seed_results.append(test_accuracies)
+    #     seed_results_per_task.append(test_accuracies_per_task)
+        
+    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD-UCL', num_tasks=5)
+    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_tducl_results.pkl")
 
     ############################### UCB ###########################################
     seed_results = []
@@ -161,15 +181,34 @@ def main(args):
         split_mnist = SplitMNIST()
         ft_size, num_classes = split_mnist.get_dims()
         
-        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
-        vcl_trainer = UCBTrainer(model, args, device, beta=5e-3, alpha=100.0, no_kl=False)
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-10.0)
+        vcl_trainer = UCBTrainer(model, args, device, beta=0.01, alpha=1.0, no_kl=False)
 
         test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCB', args.num_tasks)
-    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/split_mnist_ucb_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCB', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_ucb_results.pkl")
+
+    ############################### TD-UCB ###########################################
+    seed_results = []
+    seed_results_per_task = []
+    n_step = 2
+    lambd = 0.9
+    for seed in seeds:
+        split_mnist = SplitMNIST()
+        ft_size, num_classes = split_mnist.get_dims()
+        
+        model = TemporalDifferenceVCL(ft_size, num_classes, n_step, lambd, args.layers, 'relu', n_heads=1, lambda_logvar=-10.0)
+        vcl_trainer = TemporalDifferenceUCBTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, alpha=1.0, beta=0.01, no_kl=False)
+
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(split_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
+
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD-UCB', num_tasks=5)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/split_mnist_tducb_results.pkl")
 
 
     for i in range(5):
@@ -209,7 +248,7 @@ if __name__ == "__main__":
                         help='Whether to enable early stopping')
     parser.add_argument('--es_patience', type=int, default=5,
                         help='Early Stopping patience.')
-    parser.add_argument('--num_seeds', type=int, default=10,
+    parser.add_argument('--num_seeds', type=int, default=1,
                         help='The number of experiment seeds.')
     
 

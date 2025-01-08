@@ -3,6 +3,7 @@ from sklearn.model_selection import train_test_split
 from collections import deque
 import numpy as np
 import torch
+from training_utils.early_stopping import EarlyStopping
 import utils
 import copy
 
@@ -64,10 +65,14 @@ class MultiHeadVCLCoreSetTrainer(VCLCoreSetTrainer):
         selected_outputs = output[torch.arange(output.shape[0]), task_ids, :]
         return target_values, selected_outputs
 
-    def compute_loss(self, output, target):
+    def compute_loss_coreset(self, output, target):
         target_values, selected_outputs = self._select_outputs(output, target)
         loss = torch.nn.CrossEntropyLoss()(selected_outputs, target_values)
         return loss
+    
+    def compute_loss_vcl(self, output, target):
+        target_values, selected_outputs = self._select_outputs(output, target)
+        return super().compute_loss(selected_outputs, target_values)
     
     def compute_metrics(self, output, target):
         target_values, selected_outputs = self._select_outputs(output, target)
@@ -86,10 +91,12 @@ class MultiHeadVCLCoreSetTrainer(VCLCoreSetTrainer):
             x_train, y_train, x_valid, y_valid, coresets = utils.generate_data_splits(task_generator, x_test_sets, y_test_sets, seed, args.valid_ratio, coresets, self.coreset_method, self.K)
             train_dataloader, valid_dataloader, test_dataloaders = utils.generate_dataloaders(x_train, y_train, x_valid, y_valid, x_test_sets, y_test_sets, args.batch_size, seed)
             
-            self.train(args.epochs_per_task, train_dataloader, valid_dataloader)
+            self.train(args.epochs_per_task, train_dataloader, valid_dataloader, loss_fn=self.compute_loss_vcl)
 
             # Adaptation
             pred_model = copy.deepcopy(self)
+            if pred_model.es:
+                pred_model.early_stop = EarlyStopping(patience=3)
 
             coreset_x_train, coreset_y_train = np.empty((0, *ft_size)), np.empty((0, num_classes + 1))
             for x_task, y_task in zip(coresets[0], coresets[1]):
@@ -99,7 +106,7 @@ class MultiHeadVCLCoreSetTrainer(VCLCoreSetTrainer):
             x_train, x_valid, y_train, y_valid = train_test_split(coreset_x_train, coreset_y_train, test_size=args.valid_ratio, random_state=seed)
             train_dataloader = utils.get_dataloader(x_train, y_train, args.batch_size, shuffle=True, drop_last=False)
             valid_dataloader = utils.get_dataloader(x_valid, y_valid, args.batch_size, shuffle=True, drop_last=False)
-            pred_model.train(args.epochs_per_task, train_dataloader, valid_dataloader)
+            pred_model.train(args.epochs_per_task, train_dataloader, valid_dataloader, loss_fn=self.compute_loss_coreset)
 
             print(f"Test Accuracy after task {task_id}:")
             acc, acc_tasks = pred_model.evaluate(test_dataloaders, single_head=args.single_head)

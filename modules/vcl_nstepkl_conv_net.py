@@ -55,8 +55,8 @@ class NStepKLVCLBayesianAlexNet(nn.Module):
         self.set_task(0 if single_head else task_id)
         for layer in self.bayesian_layers:
                 layer.update_posterior()
-        
-    def forward(self, x, sample=True):
+    
+    def _backbone(self, x, sample):
         x = self.relu(self.conv1(x, sample))
         x = self.pool1(x)
         
@@ -74,10 +74,11 @@ class NStepKLVCLBayesianAlexNet(nn.Module):
         
         x = self.drop1(self.relu(self.fc1(x, sample)))
         x = self.drop2(self.relu(self.fc2(x, sample)))
-        # x = self.fc3(x)
-
+        return x
+         
+    def forward(self, x, sample=True):
+        x = self._backbone(x, sample)
         x = self.last[self.current_task](x)
-        
         return x
     
 class NStepKLVCLBayesianAlexNetV2(nn.Module):
@@ -164,6 +165,15 @@ class NStepKLVCLBayesianAlexNetV2(nn.Module):
 class MultiHeadNStepKLVCLBayesianAlexNetV2(NStepKLVCLBayesianAlexNetV2):
     def __init__(self, inputsize, n, num_heads=1, num_classes=10, lambda_logvar=-15.0, lambda_logvar_batchnorm=-5.0, lambda_logvar_mlp=-15.0):
         super(MultiHeadNStepKLVCLBayesianAlexNetV2, self).__init__(inputsize, n, num_heads, num_classes, lambda_logvar, lambda_logvar_batchnorm, lambda_logvar_mlp)
+    
+    def forward(self, x, sample=True):
+        x = self._backbone(x, sample)
+        outputs = torch.cat([head(x).unsqueeze(1) for head in self.last], axis=1)
+        return outputs
+
+class MultiHeadNStepKLVCLBayesianAlexNet(NStepKLVCLBayesianAlexNet):
+    def __init__(self, inputsize, n, num_heads=1, num_classes=10, lambda_logvar=-15.0, lambda_logvar_mlp=-15.0):
+        super(MultiHeadNStepKLVCLBayesianAlexNet, self).__init__(inputsize, n, num_heads, num_classes, lambda_logvar, lambda_logvar_mlp)
     
     def forward(self, x, sample=True):
         x = self._backbone(x, sample)

@@ -55,8 +55,8 @@ class TDVCLBayesianAlexNet(nn.Module):
         self.set_task(0 if single_head else task_id)
         for layer in self.bayesian_layers:
                 layer.update_posterior()
-        
-    def forward(self, x, sample=True):
+    
+    def _backbone(self, x, sample=True):
         x = self.relu(self.conv1(x, sample))
         x = self.pool1(x)
         
@@ -74,8 +74,10 @@ class TDVCLBayesianAlexNet(nn.Module):
         
         x = self.drop1(self.relu(self.fc1(x, sample)))
         x = self.drop2(self.relu(self.fc2(x, sample)))
-        # x = self.fc3(x)
-
+        return x
+         
+    def forward(self, x, sample=True):
+        x = self._backbone(x,sample)
         x = self.last[self.current_task](x)
         
         return x
@@ -161,9 +163,9 @@ class TDVCLBayesianAlexNetV2(nn.Module):
         
         return x
     
-class MultiHeadTDVCLBayesianAlexNetV2(TDVCLBayesianAlexNetV2):
-    def __init__(self, inputsize, n, lambd, num_heads=1, num_classes=10, lambda_logvar=-15.0, lambda_logvar_batchnorm=-5.0, lambda_logvar_mlp=-15.0):
-        super(MultiHeadTDVCLBayesianAlexNetV2, self).__init__(inputsize, n, lambd, num_heads, num_classes, lambda_logvar, lambda_logvar_batchnorm, lambda_logvar_mlp)
+class MultiHeadTDVCLBayesianAlexNet(TDVCLBayesianAlexNet):
+    def __init__(self, inputsize, n, lambd, num_heads=1, num_classes=10, lambda_logvar=-15.0, lambda_logvar_mlp=-15.0):
+        super(MultiHeadTDVCLBayesianAlexNet, self).__init__(inputsize, n, lambd, num_heads, num_classes, lambda_logvar, lambda_logvar_mlp)
     
     def forward(self, x, sample=True):
         x = self._backbone(x, sample)

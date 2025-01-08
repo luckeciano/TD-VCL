@@ -46,9 +46,12 @@ class Trainer:
         
         return test_accuracies, test_accuracies_per_task
 
-    def train(self, epochs, train_loader, valid_loader):
+    def train(self, epochs, train_loader, valid_loader, loss_fn = None):
         if self.es:
             self.early_stop.reset()
+        
+        if not loss_fn:
+            loss_fn = self.compute_loss
 
         for epoch in range(epochs):
             self.model.train()
@@ -56,7 +59,7 @@ class Trainer:
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
                 outputs = self.model(inputs)
-                loss = self.compute_loss(outputs, targets)
+                loss = loss_fn(outputs, targets)
                 acc, _, _  = self.compute_metrics(outputs, targets)
                 # print(f'Epoch: {epoch} Train loss: {loss.item()} Batch Accuracy: {acc} ')
                 loss.backward()
@@ -72,7 +75,7 @@ class Trainer:
                 for inputs, targets in train_loader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs, sample=False)
-                    train_loss += self.compute_loss(outputs, targets)
+                    train_loss += loss_fn(outputs, targets)
                     _, corr, tot = self.compute_metrics(outputs, targets)
                     train_corrects += corr
                     train_total += tot
@@ -87,7 +90,7 @@ class Trainer:
                 for inputs, targets in valid_loader:
                     inputs, targets = inputs.to(self.device), targets.to(self.device)
                     outputs = self.model(inputs, sample=False)
-                    valid_loss += self.compute_loss(outputs, targets)
+                    valid_loss += loss_fn(outputs, targets)
                     _, corr, tot = self.compute_metrics(outputs, targets)
                     valid_corrects += corr
                     valid_total += tot
