@@ -6,7 +6,7 @@ import utils
 import numpy as np
 
 class NStepKLVCLTrainer(Trainer):
-    def __init__(self, model, args, device, n, num_mem_tasks, task_mem_size, beta=5e-3, no_kl=False):
+    def __init__(self, model, args, device, n, num_mem_tasks, task_mem_size, beta=5e-3, no_kl=False, upsample=True):
         super().__init__(model, args, device)
         self.no_kl = no_kl
         self.beta = beta
@@ -14,6 +14,7 @@ class NStepKLVCLTrainer(Trainer):
         self.n = n
         self.num_mem_tasks = num_mem_tasks
         self.task_mem_size = task_mem_size
+        self.upsample = upsample
         self.timestep = 0
 
     def compute_task_ll_weight(self, t):
@@ -43,7 +44,7 @@ class NStepKLVCLTrainer(Trainer):
 
     def add_to_buffer(self, x_train, y_train, t):
         if self.replay_buffer is None:
-            self.replay_buffer = ReplayBuffer(self.num_mem_tasks, self.task_mem_size)
+            self.replay_buffer = ReplayBuffer(self.num_mem_tasks, self.task_mem_size, self.upsample)
         self.replay_buffer.push(x_train, y_train, t)
 
     def train_eval_loop(self, task_generator, model, args, seed, break_search=False, break_search_min=0.5):

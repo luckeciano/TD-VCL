@@ -102,11 +102,12 @@ class MultiHeadVCLCoreSetTrainer(VCLCoreSetTrainer):
             for x_task, y_task in zip(coresets[0], coresets[1]):
                 coreset_x_train = np.vstack((coreset_x_train, x_task))
                 coreset_y_train = np.vstack((coreset_y_train, y_task))
-            
-            x_train, x_valid, y_train, y_valid = train_test_split(coreset_x_train, coreset_y_train, test_size=args.valid_ratio, random_state=seed)
-            train_dataloader = utils.get_dataloader(x_train, y_train, args.batch_size, shuffle=True, drop_last=False)
-            valid_dataloader = utils.get_dataloader(x_valid, y_valid, args.batch_size, shuffle=True, drop_last=False)
-            pred_model.train(args.epochs_per_task, train_dataloader, valid_dataloader, loss_fn=self.compute_loss_coreset)
+
+            if len(coreset_x_train) != 0:  
+                x_train, x_valid, y_train, y_valid = train_test_split(coreset_x_train, coreset_y_train, test_size=args.valid_ratio, random_state=seed)
+                train_dataloader = utils.get_dataloader(x_train, y_train, args.batch_size, shuffle=True, drop_last=False)
+                valid_dataloader = utils.get_dataloader(x_valid, y_valid, args.batch_size, shuffle=True, drop_last=False)
+                pred_model.train(args.epochs_per_task, train_dataloader, valid_dataloader, loss_fn=self.compute_loss_coreset)
 
             print(f"Test Accuracy after task {task_id}:")
             acc, acc_tasks = pred_model.evaluate(test_dataloaders, single_head=args.single_head)

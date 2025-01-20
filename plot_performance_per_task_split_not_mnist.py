@@ -88,7 +88,7 @@ for i in range(5):
 plot_values(axs[1][2], split_notmnist, num_tasks=5, lower_ylim=0.45, upper_ylim=0.83, legend=False, title="Permuted MNIST", skip_ylabel=True)
 axs[1][2].set_title(f'Average')
 
-plt.suptitle('Split NotMNIST: Per Task Performance')
+plt.suptitle('SplitNotMNIST-Hard: Per Task Performance')
 
 figs.tight_layout()
 figs.savefig('./iclr_split_notmnist_tasks.png', bbox_inches='tight')

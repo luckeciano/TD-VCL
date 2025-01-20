@@ -54,7 +54,7 @@ def plot_task_values(ax, dfs, task_id, num_tasks, lower_ylim, upper_ylim, legend
 
     # Set the y-axis limits and ticks
     ax.set_ylim(lower_ylim, upper_ylim)
-    ax.set_yticks(np.arange(lower_ylim, upper_ylim, 0.1))
+    ax.set_yticks(np.arange(lower_ylim + 0.1, upper_ylim, 0.2))
 
     if legend:
         ax.legend(title='Method', loc='lower left', fontsize=20, title_fontsize=20)
@@ -71,8 +71,8 @@ def plot_task_values(ax, dfs, task_id, num_tasks, lower_ylim, upper_ylim, legend
     ax.set_xticklabels(np.arange(1, num_tasks + 1, 1))
 
 _,  permuted_mnist_tasks = load_results("results/permuted_mnist_tdvcl_results.pkl") # This pickle contains all results
-# split_mnist, split_mnist_tasks = load_results("results/split_mnist_tdvcl_results.pkl") # This pickle contains all results
-split_mnist, split_mnist_tasks = load_results("results/split_mnist_multihead_tdvcl_results.pkl") # This pickle contains all results
+split_mnist, split_mnist_tasks = load_results("results/split_mnist_tdvcl_results.pkl") # This pickle contains all results
+# split_mnist, split_mnist_tasks = load_results("results/split_mnist_multihead_tdvcl_results.pkl") # This pickle contains all results
 split_notmnist, _ = load_results("results/split_notmnist_tdvcl_results.pkl") # This pickle contains all results
 num_tasks = 3
 
@@ -84,24 +84,24 @@ sns.set(font_scale=2.5)
 figs, axs = plt.subplots(2, 3, figsize=(8 * 3, 6 * 2))
 
 for i in range(5):
-    plot_task_values(axs[i // 3][i % 3], split_mnist_tasks[i], i + 1, 5, 0.05, 1.02, i == 4, i % 3 != 0, task_id_dict)
+    plot_task_values(axs[i // 3][i % 3], split_mnist_tasks[i], i + 1, 5, 0.1, 1.02, i == 4, i % 3 != 0, task_id_dict)
 plot_values(axs[1][2], split_mnist, num_tasks=5, lower_ylim=0.55, upper_ylim=1.02, legend=False, title="Permuted MNIST", skip_ylabel=True)
 axs[1][2].set_title(f'Average')
 
-plt.suptitle('Split MNIST: Per Task Performance')
+plt.suptitle('SplitMNIST-Hard: Per Task Performance')
 
 figs.tight_layout()
 figs.savefig('./iclr_split_mnist_tasks.png', bbox_inches='tight')
 figs.savefig('./iclr_split_mnist_tasks.eps', bbox_inches='tight')
 figs.savefig('./iclr_split_mnist_tasks.pdf', bbox_inches='tight')
 
-# # For multihead network
+# For multihead network
 # for i in range(5):
 #     plot_task_values(axs[i // 3][i % 3], split_mnist_tasks[i], i + 1, 5, 0.60, 1.02, i == 4, i % 3 != 0, task_id_dict)
 # plot_values(axs[1][2], split_mnist, num_tasks=5, lower_ylim=0.6, upper_ylim=1.02, legend=False, title="Permuted MNIST", skip_ylabel=True)
 # axs[1][2].set_title(f'Average')
 
-# plt.suptitle('Split MNIST: Per Task Performance (Multi-Head Network)')
+# plt.suptitle('SplitMNIST: Per Task Performance')
 
 # figs.tight_layout()
 # figs.savefig('./iclr_split_mnist_multihead_tasks.png', bbox_inches='tight')

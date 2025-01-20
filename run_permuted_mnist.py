@@ -23,176 +23,176 @@ def main(args):
     multitask_plot_dfs = []
     singletask_plot_dfs = [[], [], [], [], [], [], [], [], [], []]
 
-    # ############################### Online MLE ###########################################
+    ############################### Online MLE ###########################################
 
-    # seed_results = []
-    # seed_results_per_task = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
 
         
-    #     model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', num_classes)
-    #     online_mle_trainer = OnlineMLETrainer(model, args, device)
+        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', num_classes)
+        online_mle_trainer = OnlineMLETrainer(model, args, device)
 
-    #     test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
 
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', args.num_tasks)
-    # save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_online_mle_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_online_mle_results.pkl")
 
-    # # ############################### Batch MLE ###########################################
+    # ############################### Batch MLE ###########################################
 
-    # seed_results = []
-    # seed_results_per_task = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
         
-    #     model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', num_classes)
-    #     batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
+        model = MultiHeadMLP(ft_size, num_classes, args.layers, 'relu', num_classes)
+        batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
 
-    #     test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
 
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', args.num_tasks)
-    # save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_batch_mle_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Batch MLE', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_batch_mle_results.pkl")
     
-    # # ############################### VCL ###########################################
-    # seed_results = []
-    # seed_results_per_task = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    # ############################### VCL ###########################################
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
         
-    #     model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
-    #     vcl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False)
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
+        vcl_trainer = VCLTrainer(model, args, device, beta=5e-3, no_kl=False)
 
-    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
 
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', args.num_tasks)
-    # save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_vcl_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_vcl_results.pkl")
 
-    # # ############################# VCL with Core Set #############################################
+    # ############################# VCL with Core Set #############################################
 
-    # seed_results = []
-    # seed_results_per_task = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
 
-    #     model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1)
-    #     vcl_trainer = VCLCoreSetTrainer(model, args, device, coreset_method=get_random_coreset, K=task_mem_size, max_tasks=num_tasks_mem)
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1)
+        vcl_trainer = VCLCoreSetTrainer(model, args, device, coreset_method=get_random_coreset, K=task_mem_size, max_tasks=num_tasks_mem)
 
-    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
 
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', args.num_tasks)
-    # save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_vcl_coreset_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'VCL CoreSet', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_vcl_coreset_results.pkl")
 
-    # # ############################# N-Step KL VCL #############################################
+    # ############################# N-Step KL VCL #############################################
 
-    # seed_results = []
-    # seed_results_per_task = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
 
-    #     n_step = 5
-    #     model = NStepKLVCL(ft_size, num_classes, n_step, args.layers, 'relu', n_heads=1)
-    #     vcl_trainer = NStepKLVCLTrainer(model, args, device, n_step, num_tasks_mem, task_mem_size, beta=5e-3, no_kl=False)
+        n_step = 5
+        model = NStepKLVCL(ft_size, num_classes, n_step, args.layers, 'relu', n_heads=1)
+        vcl_trainer = NStepKLVCLTrainer(model, args, device, n_step, num_tasks_mem, task_mem_size, beta=5e-3, no_kl=False)
 
-    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
 
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', args.num_tasks)
-    # save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_nstepkl_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'N-Step TD-VCL', args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_nstepkl_results.pkl")
 
-    # ############################# TD(lambda)-VCL #############################################
+    ############################# TD(lambda)-VCL #############################################
 
-    # seed_results = []
-    # seed_results_per_task = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
 
-    #     n_step = 8
-    #     lambd = 0.5
-    #     beta = 1e-3
-    #     model = TemporalDifferenceVCL(ft_size, num_classes, n_step, lambd, args.layers, 'relu', n_heads=1)
-    #     tdvcl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
+        n_step = 8
+        lambd = 0.5
+        beta = 1e-3
+        model = TemporalDifferenceVCL(ft_size, num_classes, n_step, lambd, args.layers, 'relu', n_heads=1)
+        tdvcl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=beta, no_kl=False)
 
-    #     test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = tdvcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
         
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=args.num_tasks)
-    # save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_tdvcl_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD(\u03BB)-VCL', num_tasks=args.num_tasks)
+    save_results(multitask_plot_dfs, singletask_plot_dfs, filename="results/permuted_mnist_tdvcl_results.pkl")
 
-    # ############################# UCL #############################################
+    ############################# UCL #############################################
 
-    # seed_results = []
-    # seed_results_per_task = []
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    seed_results = []
+    seed_results_per_task = []
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
         
-    #     model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-10.0, ratio=0.5, alpha=1.0, beta=0.001, gamma=0.01)
-    #     ucl_trainer = VCLTrainer(model, args, device, beta=0.005, no_kl=False) # Same trainer as VCL
+        model = UCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-10.0, ratio=0.5, alpha=1.0, beta=0.001, gamma=0.01)
+        ucl_trainer = VCLTrainer(model, args, device, beta=0.005, no_kl=False) # Same trainer as VCL
 
-    #     test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = ucl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
         
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCL', num_tasks=args.num_tasks)
-    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/permuted_mnist_ucl_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCL', num_tasks=args.num_tasks)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/permuted_mnist_ucl_results.pkl")
 
 
-    ############################# TD-UCL #############################################
+    ############################ TD-UCL #############################################
 
-    # seed_results = []
-    # seed_results_per_task = []
-    # n_step = 5
-    # lambd = 0.99
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    seed_results = []
+    seed_results_per_task = []
+    n_step = 5
+    lambd = 0.99
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
         
-    #     model = TemporalDifferenceUCL(ft_size, num_classes, n_step, lambd, args.layers, lambda_logvar=-10.0, ratio=0.5, alpha=1.0, beta=0.001, gamma=0.01, activation_fn='relu', n_heads=1)
-    #     tducl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=0.001, no_kl=False)
+        model = TemporalDifferenceUCL(ft_size, num_classes, n_step, lambd, args.layers, lambda_logvar=-10.0, ratio=0.5, alpha=1.0, beta=0.001, gamma=0.01, activation_fn='relu', n_heads=1)
+        tducl_trainer = TemporalDifferenceVCLTrainer(model, args, device, n_step, lambd, num_tasks_mem, task_mem_size, beta=0.001, no_kl=False)
 
-    #     test_accuracies, test_accuracies_per_task = tducl_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = tducl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
         
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD-UCL', num_tasks=args.num_tasks)
-    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/permuted_mnist_tducl_results.pkl")
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'TD-UCL', num_tasks=args.num_tasks)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/permuted_mnist_tducl_results.pkl")
 
-    ############################### UCB ###########################################
-    # seed_results = []
-    # seed_results_per_task = []
-    # prior_patience = args.es_patience
-    # args.es_patience = 20 # UCB is more robust to overfitting
-    # for seed in seeds:
-    #     perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
-    #     ft_size, num_classes = perm_mnist.get_dims()
+    ############################## UCB ###########################################
+    seed_results = []
+    seed_results_per_task = []
+    prior_patience = args.es_patience
+    args.es_patience = 20 # UCB is more robust to overfitting
+    for seed in seeds:
+        perm_mnist = PermutedMNIST(max_iter=args.num_tasks, seed=seed)
+        ft_size, num_classes = perm_mnist.get_dims()
         
-    #     model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
-    #     vcl_trainer = UCBTrainer(model, args, device, beta=0.01, alpha=1.0, no_kl=False)
+        model = VCL(ft_size, num_classes, args.layers, 'relu', mle_model=None, n_heads=1, lambd_logvar=-5.0)
+        vcl_trainer = UCBTrainer(model, args, device, beta=0.01, alpha=1.0, no_kl=False)
 
-    #     test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
-    #     seed_results.append(test_accuracies)
-    #     seed_results_per_task.append(test_accuracies_per_task)
+        test_accuracies, test_accuracies_per_task = vcl_trainer.train_eval_loop(perm_mnist, model, args, seed)
+        seed_results.append(test_accuracies)
+        seed_results_per_task.append(test_accuracies_per_task)
 
-    # multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCB', args.num_tasks)
-    # save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/permuted_mnist_ucb_results.pkl")
-    # args.es_patience = prior_patience
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'UCB', args.num_tasks)
+    save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/permuted_mnist_ucb_results.pkl")
+    args.es_patience = prior_patience
 
     ############################### TD-UCB ###########################################
     print("TD-UCB")

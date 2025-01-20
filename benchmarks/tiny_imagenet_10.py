@@ -13,9 +13,9 @@ from torch.utils.data import Dataset
 class TinyImagenet(Dataset):
     """Defines the Tiny Imagenet dataset."""
 
-    def __init__(self, task_id = False) -> None:
-        self.num_classes = 20
-        self.num_tasks = 10
+    def __init__(self, task_id = False, num_classes = 20, num_tasks = 10) -> None:
+        self.num_classes = num_classes
+        self.num_tasks = num_tasks
         self.size = [3, 64, 64]
 
         self.x_train = []

@@ -34,7 +34,7 @@ def main(args):
             plot_values(task_plot_dfs, args.num_tasks, axs[idx // 3][idx % 3], idx, n_step, beta, f'n-Step: {n_step}')
 
     
-        plt.suptitle('Permuted MNIST: TD(\u03BB)-VCL Ablation')
+        plt.suptitle('PermutedMNIST-Hard: TD(\u03BB)-VCL Ablation')
         plt.tight_layout()
         plt.savefig(f'./test_permuted_mnist_td_ablation_final_{beta}.png', bbox_inches='tight')
         plt.savefig(f'./test_permuted_mnist_td_ablation_final_{beta}.eps', bbox_inches='tight')

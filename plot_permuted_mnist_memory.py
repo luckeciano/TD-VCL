@@ -31,7 +31,7 @@ def main(args):
        plot_values(plot_dfs + task_plot_dfs, args.num_tasks, axs[idx], idx)
 
     
-    plt.suptitle('Permuted MNIST: Replay Buffer Analysis')
+    plt.suptitle('PermutedMNIST: Replay Buffer Analysis')
     plt.tight_layout()
     plt.savefig('./iclr_permuted_mnist_memory.png', bbox_inches='tight')
     plt.savefig('./iclr_permuted_mnist_memory.pdf', bbox_inches='tight')

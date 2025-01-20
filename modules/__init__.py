@@ -1,6 +1,6 @@
 from .multi_head_mlp import MultiHeadMLP
 from .multi_head_cnn import MultiHeadMNISTCNN
-from .conv_net import ConvNet, AlexNet, AlexNetV2, AlexNet64, ResNet
+from .conv_net import ConvNet, AlexNet, AlexNetV2, AlexNet64
 
 from .mean_field_gaussian import MeanFieldGaussian, MeanFieldGaussianWithNodeVariance
 from .vcl_bayesian_linear import VCLBayesianLinear

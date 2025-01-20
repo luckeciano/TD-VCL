@@ -3,12 +3,13 @@ import numpy as np
 import random
 
 class ReplayBuffer:
-    def __init__(self, num_tasks, task_size):
+    def __init__(self, num_tasks, task_size, upsample=True):
         self.num_tasks = num_tasks
         self.task_size = task_size
         self.buffer_x = deque(maxlen=num_tasks)
         self.buffer_y = deque(maxlen=num_tasks)
         self.buffer_t = deque(maxlen=num_tasks)
+        self.upsample = upsample
 
     def push(self, x_train, y_train, t):
         self.buffer_x.append(x_train)
@@ -28,9 +29,11 @@ class ReplayBuffer:
             task_y = y_task[indices]
             task_t = t[indices]
 
-            task_x = np.repeat(task_x, int(upsample_weight / len(task_x)), axis=0)
-            task_y = np.repeat(task_y, int(upsample_weight / len(task_y)), axis=0)
-            task_t = np.repeat(task_t, int(upsample_weight / len(task_t)), axis=0)
+            if self.upsample:
+                task_x = np.repeat(task_x, int(upsample_weight / len(task_x)), axis=0)
+                task_y = np.repeat(task_y, int(upsample_weight / len(task_y)), axis=0)
+                task_t = np.repeat(task_t, int(upsample_weight / len(task_t)), axis=0)
+            
             x_train.append(task_x)
             y_train.append(task_y)
             t_train.append(task_t)

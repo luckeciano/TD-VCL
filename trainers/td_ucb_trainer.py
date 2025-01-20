@@ -4,8 +4,8 @@ import torch
 import utils
 
 class TemporalDifferenceUCBTrainer(TemporalDifferenceVCLTrainer):
-    def __init__(self, model, args, device, n, lambd, num_mem_tasks, task_mem_size, alpha, beta=5e-3, no_kl=False, weight_decay=0):
-        super().__init__(model, args, device, n, lambd, num_mem_tasks, task_mem_size, beta, no_kl)
+    def __init__(self, model, args, device, n, lambd, num_mem_tasks, task_mem_size, alpha, beta=5e-3, no_kl=False, weight_decay=0, upsample=True):
+        super().__init__(model, args, device, n, lambd, num_mem_tasks, task_mem_size, beta, no_kl, upsample)
         self.lambd = lambd
         self.optimizer = UCBOptimizer(self.model.named_parameters(), lr=args.lr, alpha=alpha, weight_decay=weight_decay)
         self.scheduler = CosineAnnealingLR(self.optimizer, T_max=args.epochs_per_task)

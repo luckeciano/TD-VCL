@@ -42,9 +42,9 @@ sns.set(font_scale=2.5)
 figs, axs = plt.subplots(2, 5, figsize=(6 * 5, 8 * 2))
 
 for i in range(10):
-    plot_task_values(axs[i // 5][i % 5], split_mnist[i], i + 1, num_tasks=10, lower_ylim=0.15, legend=(i == 9), skip_ylabel=(i%5 != 0))
+    plot_task_values(axs[i // 5][i % 5], permuted_mnist_tasks[i], i + 1, num_tasks=10, lower_ylim=0.15, legend=(i == 9), skip_ylabel=(i%5 != 0))
 
-plt.suptitle('Split MNIST: Per Task Performance')
+plt.suptitle('PermutedMNIST-Hard: Per Task Performance')
 figs.tight_layout()
 figs.savefig('./iclr_permuted_mnist_tasks.png', bbox_inches='tight')
 figs.savefig('./iclr_permuted_mnist_tasks.eps', bbox_inches='tight')

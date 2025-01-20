@@ -61,7 +61,7 @@ sns.set(font_scale=3.0)
 
 fig = plt.figure(figsize=(13, 10))
 ax = fig.gca()
-plot_values(ax, permuted_mnist, num_tasks=10, lower_ylim=0.75, upper_ylim=1.01, legend=True, title="Permuted MNIST")
+plot_values(ax, permuted_mnist, num_tasks=10, lower_ylim=0.75, upper_ylim=1.01, legend=True, title="PermutedMNIST-Hard")
 # plot_values(axs[1], split_mnist, num_tasks=5, lower_ylim=0.5, upper_ylim=1.05, legend=False, title="Split MNIST")
 # plot_values(axs[2], split_notmnist, num_tasks=5, lower_ylim=0.45, upper_ylim=0.85, legend=False, title="Split NotMNIST")
 fig.tight_layout()

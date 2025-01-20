@@ -3,8 +3,8 @@ import torch
 import utils
 
 class TemporalDifferenceVCLTrainer(NStepKLVCLTrainer):
-    def __init__(self, model, args, device, n, lambd, num_mem_tasks, task_mem_size, beta=5e-3, no_kl=False):
-        super().__init__(model, args, device, n, num_mem_tasks, task_mem_size, beta, no_kl)
+    def __init__(self, model, args, device, n, lambd, num_mem_tasks, task_mem_size, beta=5e-3, no_kl=False, upsample=True):
+        super().__init__(model, args, device, n, num_mem_tasks, task_mem_size, beta, no_kl, upsample)
         self.lambd = lambd
 
     def compute_task_ll_weight(self, t):
