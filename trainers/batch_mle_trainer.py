@@ -1,4 +1,5 @@
 from torch import nn
+import torch
 from trainers import OnlineMLETrainer
 from sklearn.model_selection import train_test_split
 import numpy as np
@@ -10,6 +11,9 @@ class BatchMLETrainer(OnlineMLETrainer):
         super().__init__(model, args, device, weight_decay)
         self.num_tasks_mem = num_tasks_mem
         self.task_mem_size = task_mem_size
+    
+    def _select_memory_set(self, x_train_sets, y_train_sets, num_tasks_mem, task_mem_size, ft_size, num_classes):
+        return select_memory_set(x_train_sets, y_train_sets, num_tasks_mem, task_mem_size, ft_size, num_classes)
 
     def train_eval_loop(self, task_generator, model, args, seed):
         x_test_sets = []
@@ -22,7 +26,7 @@ class BatchMLETrainer(OnlineMLETrainer):
         for task_id in range(task_generator.max_iter):
             model.new_task(task_id, args.single_head)
             ft_size, num_classes = task_generator.get_dims()
-            mem_x_train, mem_y_train = select_memory_set(x_train_sets, y_train_sets, self.num_tasks_mem, self.task_mem_size, ft_size, num_classes)
+            mem_x_train, mem_y_train = self._select_memory_set(x_train_sets, y_train_sets, self.num_tasks_mem, self.task_mem_size, ft_size, num_classes)
             task_x_train, task_y_train, x_test, y_test = task_generator.next_task()
 
             x_train = np.vstack((task_x_train, mem_x_train))
@@ -46,4 +50,24 @@ class BatchMLETrainer(OnlineMLETrainer):
                 test_accuracies_per_task[idx].append(task_acc)
         
         return test_accuracies, test_accuracies_per_task
+    
+class MultiHeadBatchMLETrainer(BatchMLETrainer):
+    def _select_memory_set(self, x_train_sets, y_train_sets, num_tasks_mem, task_mem_size, ft_size, num_classes):
+        return select_memory_set(x_train_sets, y_train_sets, num_tasks_mem, task_mem_size, ft_size, num_classes + 1)
+    
+    def _select_outputs(self, output, target):
+        target_values = target[:, :-1]
+        task_ids = target[:, -1].long()
+
+        selected_outputs = output[torch.arange(output.shape[0]), task_ids, :]
+        return target_values, selected_outputs
+
+    def compute_loss(self, output, target):
+        target_values, selected_outputs = self._select_outputs(output, target)
+        loss = super().compute_loss(selected_outputs, target_values)
+        return loss
+    
+    def compute_metrics(self, output, target):
+        target_values, selected_outputs = self._select_outputs(output, target)
+        return utils.compute_accuracy(selected_outputs, target_values)
         

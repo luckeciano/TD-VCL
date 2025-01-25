@@ -114,8 +114,8 @@ class AlexNet(nn.Module):
         
     def set_task(self, id):
         self.current_task = id
-        
-    def forward(self, x, sample=False):
+
+    def _backbone(self, x, sample=False):
         x = self.relu(self.conv1(x))
         x = self.pool1(x)
         
@@ -133,11 +133,21 @@ class AlexNet(nn.Module):
         
         x = self.drop1(self.relu(self.fc1(x)))
         x = self.drop2(self.relu(self.fc2(x)))
-        # x = self.fc3(x)
-
-        x = self.last[self.current_task](x)
-        
         return x
+        
+    def forward(self, x, sample=False):
+        x = self._backbone(x, sample)
+        x = self.last[self.current_task](x)
+        return x
+    
+class MultiHeadAlexNet(AlexNet):
+    def __init__(self, inputsize, num_heads=1, num_classes=10):
+        super(MultiHeadAlexNet, self).__init__(inputsize, num_heads, num_classes)
+    
+    def forward(self, x, sample=False):
+        x = self._backbone(x, sample)
+        outputs = torch.cat([head(x).unsqueeze(1) for head in self.last], axis=1)
+        return outputs
 
 import torch
 import torch.nn as nn

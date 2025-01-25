@@ -1,10 +1,10 @@
 import argparse
 import torch
 from benchmarks import TinyImagenet
-from trainers import OnlineMLETrainer, BatchMLETrainer, VCLTrainer, VCLCoreSetTrainer, MultiHeadVCLCoreSetTrainer, \
+from trainers import OnlineMLETrainer, BatchMLETrainer, MultiHeadBatchMLETrainer, VCLTrainer, VCLCoreSetTrainer, MultiHeadVCLCoreSetTrainer, \
     NStepKLVCLTrainer, MultiHeadNStepKLVCLTrainer, TemporalDifferenceVCLTrainer, MultiHeadTDVCLTrainer, UCBTrainer, TemporalDifferenceUCBTrainer, MultiHeadTDUCBTrainer
 from data_structures import get_random_coreset
-from modules import AlexNet, AlexNetV2, ConvNet, VCLBayesianConvNet, VCLBayesianAlexNet, VCLBayesianAlexNetV2, VCLBayesianAlexNet64, \
+from modules import AlexNet, AlexNetV2, ConvNet, MultiHeadAlexNet, VCLBayesianConvNet, VCLBayesianAlexNet, VCLBayesianAlexNetV2, VCLBayesianAlexNet64, \
     NStepKLVCLBayesianAlexNet, NStepKLVCLBayesianAlexNetV2, \
     MultiHeadVCLBayesianAlexNet , MultiHeadVCLBayesianAlexNet64, \
     TDVCLBayesianAlexNet, TDVCLBayesianAlexNetV2, MultiHeadTDVCLBayesianAlexNet, \
@@ -37,17 +37,17 @@ def main(args):
     seed_results = []
     seed_results_per_task = []
     for seed in seeds:
-        tiny_imagenet = TinyImagenet(num_classes=5, num_tasks=40)
+        tiny_imagenet = TinyImagenet(task_id=True)
         ft_size, num_classes = tiny_imagenet.get_dims()
 
-        model = AlexNet(ft_size, num_heads=40, num_classes=num_classes)
+        model = AlexNet(ft_size, num_heads=10, num_classes=num_classes)
         online_mle_trainer = OnlineMLETrainer(model, args, device)
 
         test_accuracies, test_accuracies_per_task = online_mle_trainer.train_eval_loop(tiny_imagenet, model, args, seed)
         seed_results.append(test_accuracies)
         seed_results_per_task.append(test_accuracies_per_task)
 
-    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', num_tasks=40)
+    multitask_plot_dfs, singletask_plot_dfs = generate_df_results(seed_results, seed_results_per_task, multitask_plot_dfs, singletask_plot_dfs, 'Online MLE', num_tasks=10)
     save_results((multitask_plot_dfs, singletask_plot_dfs), filename="results/tiny_imagenet_online_mle_results.pkl")
 
     # ##################################### Batch MLE #################################################
@@ -55,11 +55,11 @@ def main(args):
     seed_results_per_task = []
     
     for seed in seeds:
-        split_cifar_100 = TinyImagenet()
+        split_cifar_100 = TinyImagenet(task_id=True)
         ft_size, num_classes = split_cifar_100.get_dims()
 
-        model = AlexNet(ft_size, num_heads=10, num_classes=num_classes)
-        batch_mle_trainer = BatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
+        model = MultiHeadAlexNet(ft_size, num_heads=10, num_classes=num_classes)
+        batch_mle_trainer = MultiHeadBatchMLETrainer(model, args, device, num_tasks_mem, task_mem_size)
 
         test_accuracies, test_accuracies_per_task = batch_mle_trainer.train_eval_loop(split_cifar_100, model, args, seed)
         seed_results.append(test_accuracies)
